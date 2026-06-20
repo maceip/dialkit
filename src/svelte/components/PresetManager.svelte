@@ -4,6 +4,7 @@
   import { DialStore } from 'dialkit/store';
   import type { Preset } from 'dialkit/store';
   import { dropdownTransition } from './transitions';
+  import { getDialKitPortalRoot, getDropdownPosition } from '../../dropdown-position';
   import { ICON_CHEVRON, ICON_TRASH } from '../../icons';
 
   let { panelId, presets, activePresetId } = $props<{
@@ -25,9 +26,8 @@
   const activePreset = $derived(presets.find((p: Preset) => p.id === activePresetId));
 
   const updatePos = () => {
-    const rect = triggerRef?.getBoundingClientRect();
-    if (!rect) return;
-    pos = { top: rect.bottom + 4, left: rect.left, width: rect.width };
+    if (!triggerRef || !portalTarget) return;
+    pos = getDropdownPosition(triggerRef, portalTarget, { allowAbove: false });
   };
 
   const openDropdown = () => {
@@ -42,7 +42,7 @@
 
   $effect(() => {
     if (typeof document === 'undefined' || !triggerRef) return;
-    portalTarget = (triggerRef.closest('.dialkit-root') as HTMLElement | null) ?? document.body;
+    portalTarget = getDialKitPortalRoot(triggerRef) ?? document.body;
   });
 
   $effect(() => {
@@ -117,7 +117,7 @@
         <div
           bind:this={dropdownRef}
           class="dialkit-root dialkit-preset-dropdown"
-          style={`position:fixed;top:${pos.top}px;left:${pos.left}px;min-width:${pos.width}px;`}
+          style={`position:absolute;top:${pos.top}px;left:${pos.left}px;min-width:${pos.width}px;`}
           transition:dropdownTransition={{ above: false }}
         >
           <div

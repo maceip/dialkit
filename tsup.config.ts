@@ -25,6 +25,7 @@ export default defineConfig([
   {
     entry: {
       icons: 'src/icons.ts',
+      'dropdown-position': 'src/dropdown-position.ts',
       'shortcut-utils': 'src/shortcut-utils.ts',
     },
     format: ['esm'],

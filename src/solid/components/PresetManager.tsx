@@ -2,6 +2,7 @@ import { createSignal, createEffect, onMount, onCleanup, Show, For } from 'solid
 import { Portal } from 'solid-js/web';
 import { animate } from 'motion';
 import { ICON_CHEVRON, ICON_TRASH } from '../../icons';
+import { getDialKitPortalRoot, getDropdownPosition } from '../../dropdown-position';
 import { DialStore } from '../../store/DialStore';
 import type { Preset } from '../../store/DialStore';
 
@@ -27,8 +28,7 @@ export function PresetManager(props: PresetManagerProps) {
   const activePreset = () => props.presets.find((p) => p.id === props.activePresetId);
 
   onMount(() => {
-    const root = triggerRef?.closest('.dialkit-root') as HTMLElement | null;
-    setPortalTarget(root ?? document.body);
+    setPortalTarget(getDialKitPortalRoot(triggerRef) ?? document.body);
 
     if (chevronRef) {
       chevronRef.style.transform = `rotate(${isOpen() ? 180 : 0}deg)`;
@@ -54,9 +54,9 @@ export function PresetManager(props: PresetManagerProps) {
   });
 
   const updatePos = () => {
-    const rect = triggerRef?.getBoundingClientRect();
-    if (!rect) return;
-    setPos({ top: rect.bottom + 4, left: rect.left, width: rect.width });
+    const root = portalTarget();
+    if (!triggerRef || !root) return;
+    setPos(getDropdownPosition(triggerRef, root, { allowAbove: false }));
   };
 
   const openDropdown = () => {
@@ -153,7 +153,7 @@ export function PresetManager(props: PresetManagerProps) {
               }}
               class="dialkit-root dialkit-preset-dropdown"
               style={{
-                position: 'fixed',
+                position: 'absolute',
                 top: `${pos().top}px`,
                 left: `${pos().left}px`,
                 'min-width': `${pos().width}px`,

@@ -2,6 +2,7 @@
   import { Spring } from 'svelte/motion';
   import Portal from '../Portal.svelte';
   import { dropdownTransition } from './transitions';
+  import { getDialKitPortalRoot, getDropdownPosition } from '../../dropdown-position';
   import { ICON_CHEVRON } from '../../icons';
 
   type SelectOption = string | { value: string; label: string };
@@ -32,18 +33,9 @@
   const selectedOption = $derived(normalized.find((o: { value: string; label: string }) => o.value === value));
 
   const updatePos = () => {
-    if (!triggerRef || typeof window === 'undefined') return;
-    const rect = triggerRef.getBoundingClientRect();
+    if (!triggerRef || !portalTarget || typeof window === 'undefined') return;
     const dropdownHeight = 8 + normalized.length * 36;
-    const spaceBelow = window.innerHeight - rect.bottom - 4;
-    const above = spaceBelow < dropdownHeight && rect.top > spaceBelow;
-
-    pos = {
-      top: above ? rect.top - 4 : rect.bottom + 4,
-      left: rect.left,
-      width: rect.width,
-      above,
-    };
+    pos = getDropdownPosition(triggerRef, portalTarget, { dropdownHeight });
   };
 
   const openDropdown = () => {
@@ -59,16 +51,16 @@
     if (!pos || typeof window === 'undefined') return '';
 
     if (pos.above) {
-      return `position:fixed;left:${pos.left}px;width:${pos.width}px;bottom:${window.innerHeight - pos.top}px;transform-origin:bottom;`;
+      return `position:absolute;left:${pos.left}px;top:${pos.top}px;width:${pos.width}px;transform-origin:bottom;`;
     }
 
-    return `position:fixed;left:${pos.left}px;width:${pos.width}px;top:${pos.top}px;transform-origin:top;`;
+    return `position:absolute;left:${pos.left}px;top:${pos.top}px;width:${pos.width}px;transform-origin:top;`;
   });
 
   $effect(() => {
     if (typeof document === 'undefined' || !triggerRef) return;
 
-    portalTarget = (triggerRef.closest('.dialkit-root') as HTMLElement | null) ?? document.body;
+    portalTarget = getDialKitPortalRoot(triggerRef) ?? document.body;
   });
 
   $effect(() => {

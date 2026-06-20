@@ -1,5 +1,6 @@
 import { Teleport, defineComponent, h, onMounted, ref, watch, type PropType } from 'vue';
 import { AnimatePresence, motion } from 'motion-v';
+import { getDialKitPortalRoot, getDropdownPosition } from '../../dropdown-position';
 
 type SelectOption = string | { value: string; label: string };
 
@@ -36,17 +37,9 @@ export const SelectControl = defineComponent({
     const selectedLabel = () => normalizedOptions().find((option) => option.value === props.value)?.label ?? props.value;
 
     const updatePos = () => {
-      if (!triggerRef.value) return;
-      const rect = triggerRef.value.getBoundingClientRect();
+      if (!triggerRef.value || !portalTarget.value) return;
       const dropdownHeight = 8 + normalizedOptions().length * 36;
-      const spaceBelow = window.innerHeight - rect.bottom - 4;
-      const above = spaceBelow < dropdownHeight && rect.top > spaceBelow;
-      pos.value = {
-        top: above ? rect.top - 4 : rect.bottom + 4,
-        left: rect.left,
-        width: rect.width,
-        above,
-      };
+      pos.value = getDropdownPosition(triggerRef.value, portalTarget.value, { dropdownHeight });
     };
 
     const openDropdown = () => {
@@ -101,8 +94,7 @@ export const SelectControl = defineComponent({
     });
 
     onMounted(() => {
-      const root = triggerRef.value?.closest('.dialkit-root') as HTMLElement | null;
-      portalTarget.value = root ?? document.body;
+      portalTarget.value = getDialKitPortalRoot(triggerRef.value) ?? document.body;
     });
 
     return () => h('div', { class: 'dialkit-select-row' }, [
@@ -141,18 +133,11 @@ export const SelectControl = defineComponent({
                 exit: { opacity: 0, y: pos.value.above ? 8 : -8, scale: 0.95 },
                 transition: { type: 'spring', visualDuration: 0.15, bounce: 0 },
                 style: {
-                  position: 'fixed',
+                  position: 'absolute',
                   left: `${pos.value.left}px`,
+                  top: `${pos.value.top}px`,
                   width: `${pos.value.width}px`,
-                  ...(pos.value.above
-                    ? {
-                      bottom: `${window.innerHeight - pos.value.top}px`,
-                      transformOrigin: 'bottom',
-                    }
-                    : {
-                      top: `${pos.value.top}px`,
-                      transformOrigin: 'top',
-                    }),
+                  transformOrigin: pos.value.above ? 'bottom' : 'top',
                 },
               }, normalizedOptions().map((option) => h('button', {
                 key: option.value,

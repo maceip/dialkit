@@ -1,6 +1,7 @@
 import { createSignal, createEffect, onMount, onCleanup, Show, For } from 'solid-js';
 import { Portal } from 'solid-js/web';
 import { animate } from 'motion';
+import { getDialKitPortalRoot, getDropdownPosition } from '../../dropdown-position';
 import { ICON_CHEVRON } from '../../icons';
 
 type SelectOption = string | { value: string; label: string };
@@ -37,8 +38,7 @@ export function SelectControl(props: SelectControlProps) {
   const selectedOption = () => normalized().find((o) => o.value === props.value);
 
   onMount(() => {
-    const root = triggerRef?.closest('.dialkit-root') as HTMLElement | null;
-    setPortalTarget(root ?? document.body);
+    setPortalTarget(getDialKitPortalRoot(triggerRef) ?? document.body);
 
     if (chevronRef) {
       chevronRef.style.transform = `rotate(${isOpen() ? 180 : 0}deg)`;
@@ -62,17 +62,10 @@ export function SelectControl(props: SelectControlProps) {
   });
 
   const updatePos = () => {
-    if (!triggerRef) return;
-    const rect = triggerRef.getBoundingClientRect();
+    const root = portalTarget();
+    if (!triggerRef || !root) return;
     const dropdownHeight = 8 + normalized().length * 36;
-    const spaceBelow = window.innerHeight - rect.bottom - 4;
-    const above = spaceBelow < dropdownHeight && rect.top > spaceBelow;
-    setPos({
-      top: above ? rect.top - 4 : rect.bottom + 4,
-      left: rect.left,
-      width: rect.width,
-      above,
-    });
+    setPos(getDropdownPosition(triggerRef, root, { dropdownHeight }));
   };
 
   const openDropdown = () => {
@@ -125,12 +118,11 @@ export function SelectControl(props: SelectControlProps) {
     const p = pos();
     if (!p) return {};
     return {
-      position: 'fixed' as const,
+      position: 'absolute' as const,
       left: `${p.left}px`,
+      top: `${p.top}px`,
       width: `${p.width}px`,
-      ...(p.above
-        ? { bottom: `${window.innerHeight - p.top}px`, 'transform-origin': 'bottom' }
-        : { top: `${p.top}px`, 'transform-origin': 'top' }),
+      'transform-origin': p.above ? 'bottom' : 'top',
     };
   };
 

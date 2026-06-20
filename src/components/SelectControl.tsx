@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'motion/react';
+import { getDialKitPortalRoot, getDropdownPosition } from '../dropdown-position';
 import { ICON_CHEVRON } from '../icons';
 
 type SelectOption = string | { value: string; label: string };
@@ -33,24 +34,15 @@ export function SelectControl({ label, value, options, onChange }: SelectControl
 
   const updatePos = useCallback(() => {
     const el = triggerRef.current;
-    if (!el) return;
-    const rect = el.getBoundingClientRect();
+    if (!el || !portalTarget) return;
     // Estimate dropdown height: 8px padding + 36px per option
     const dropdownHeight = 8 + normalized.length * 36;
-    const spaceBelow = window.innerHeight - rect.bottom - 4;
-    const above = spaceBelow < dropdownHeight && rect.top > spaceBelow;
-    setPos({
-      top: above ? rect.top - 4 : rect.bottom + 4,
-      left: rect.left,
-      width: rect.width,
-      above,
-    });
-  }, [normalized.length]);
+    setPos(getDropdownPosition(el, portalTarget, { dropdownHeight }));
+  }, [normalized.length, portalTarget]);
 
   // Resolve portal target (closest .dialkit-root)
   useEffect(() => {
-    const root = triggerRef.current?.closest('.dialkit-root') as HTMLElement | null;
-    setPortalTarget(root ?? document.body);
+    setPortalTarget(getDialKitPortalRoot(triggerRef.current) ?? document.body);
   }, []);
 
   // Position dropdown when opening
@@ -115,12 +107,11 @@ export function SelectControl({ label, value, options, onChange }: SelectControl
               exit={{ opacity: 0, y: pos.above ? 8 : -8, scale: 0.95 }}
               transition={{ type: 'spring', visualDuration: 0.15, bounce: 0 }}
               style={{
-                position: 'fixed',
+                position: 'absolute',
                 left: pos.left,
+                top: pos.top,
                 width: pos.width,
-                ...(pos.above
-                  ? { bottom: window.innerHeight - pos.top, transformOrigin: 'bottom' }
-                  : { top: pos.top, transformOrigin: 'top' }),
+                transformOrigin: pos.above ? 'bottom' : 'top',
               }}
             >
               {normalized.map((option) => (
