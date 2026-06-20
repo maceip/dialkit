@@ -72,6 +72,14 @@
   transform-origin: top right;
 }
 
+.dialkit-panel[data-origin-x="left"] .dialkit-panel-inner {
+  transform-origin: top left;
+}
+
+.dialkit-panel[data-origin-x="right"] .dialkit-panel-inner {
+  transform-origin: top right;
+}
+
 .dialkit-panel[data-position="top-left"] .dialkit-panel-inner {
   transform-origin: top left;
   max-height: calc(100vh - 80px);
@@ -171,6 +179,18 @@
   padding-bottom: 6px;
   margin-bottom: 12px;
   border-bottom: 1px solid var(--dial-surface-subtle);
+}
+
+.dialkit-panel:not([data-mode="inline"]) .dialkit-panel-inner:not([data-collapsed="true"]) > .dialkit-folder-root > .dialkit-panel-header {
+  cursor: grab;
+}
+
+.dialkit-panel:not([data-mode="inline"]) .dialkit-panel-inner:not([data-collapsed="true"]) > .dialkit-folder-root > .dialkit-panel-header:active {
+  cursor: grabbing;
+}
+
+.dialkit-panel:not([data-mode="inline"]) .dialkit-panel-icon {
+  cursor: pointer;
 }
 
 .dialkit-folder-header {

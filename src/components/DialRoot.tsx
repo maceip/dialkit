@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { DialStore, PanelConfig } from '../store/DialStore';
 import { Panel } from './Panel';
 import { ShortcutListener } from './ShortcutListener';
+import { blockPanelDragClick, getPanelDragHandle, getPanelDragOffset, getPanelDragStart, getPanelOriginX, hasPanelDragMoved } from '../panel-drag';
 
 export type DialPosition = 'top-right' | 'top-left' | 'bottom-right' | 'bottom-left';
 export type DialMode = 'popover' | 'inline';
@@ -61,18 +62,21 @@ export function DialRoot({ position = 'top-right', defaultOpen = true, mode = 'p
       const collapsed = Array.from(inners).every(
         (el) => el.getAttribute('data-collapsed') === 'true'
       );
+      const currentDragOffset = dragOffset;
 
       if (!collapsed) {
         // Opening — save drag position, determine corner, snap
-        if (dragOffset) {
-          lastDragOffset.current = dragOffset;
-          const bubbleCenterX = dragOffset.x + 21;
+        if (currentDragOffset) {
+          lastDragOffset.current = currentDragOffset;
+          const bubbleCenterX = currentDragOffset.x + 21;
           const midX = window.innerWidth / 2;
           setActivePosition(bubbleCenterX < midX ? 'top-left' : 'top-right');
         } else {
           setActivePosition(position);
         }
         setDragOffset(null);
+      } else if (currentDragOffset) {
+        lastDragOffset.current = currentDragOffset;
       } else if (lastDragOffset.current) {
         // Closing — restore the dragged position
         setDragOffset(lastDragOffset.current);
@@ -83,50 +87,41 @@ export function DialRoot({ position = 'top-right', defaultOpen = true, mode = 'p
   }, [inline, dragOffset, position]);
 
   const handlePointerDown = useCallback((e: React.PointerEvent) => {
-    // Only drag the collapsed bubble that was actually pressed
-    const inner = (e.target as HTMLElement).closest<HTMLElement>('.dialkit-panel-inner');
-    if (!inner || inner.getAttribute('data-collapsed') !== 'true') return;
+    const panel = panelRef.current;
+    const handle = getPanelDragHandle(e.target, panel);
+    if (!panel || !handle) return;
 
-    dragTargetRef.current = inner;
-    const rect = panelRef.current!.getBoundingClientRect();
-    dragStartRef.current = {
-      pointerX: e.clientX,
-      pointerY: e.clientY,
-      elX: rect.left,
-      elY: rect.top,
-    };
+    dragTargetRef.current = handle;
+    dragStartRef.current = getPanelDragStart(e.clientX, e.clientY, panel);
     didDragRef.current = false;
     draggingRef.current = true;
-    (e.target as HTMLElement).setPointerCapture(e.pointerId);
+    handle.setPointerCapture(e.pointerId);
   }, []);
 
   const handlePointerMove = useCallback((e: React.PointerEvent) => {
     if (!draggingRef.current || !dragStartRef.current) return;
 
-    const dx = e.clientX - dragStartRef.current.pointerX;
-    const dy = e.clientY - dragStartRef.current.pointerY;
-
-    if (!didDragRef.current && Math.abs(dx) + Math.abs(dy) < 4) return;
+    if (!didDragRef.current && !hasPanelDragMoved(dragStartRef.current, e.clientX, e.clientY)) return;
     didDragRef.current = true;
 
-    setDragOffset({
-      x: dragStartRef.current.elX + dx,
-      y: dragStartRef.current.elY + dy,
-    });
+    setDragOffset(getPanelDragOffset(dragStartRef.current, e.clientX, e.clientY));
   }, []);
 
   const handlePointerUp = useCallback((e: React.PointerEvent) => {
     if (!draggingRef.current) return;
     draggingRef.current = false;
     dragStartRef.current = null;
+    const dragTarget = dragTargetRef.current;
+
+    if (dragTarget?.hasPointerCapture(e.pointerId)) {
+      dragTarget.releasePointerCapture(e.pointerId);
+    }
 
     // If we actually dragged, prevent the click from opening the panel
     if (didDragRef.current) {
       e.stopPropagation();
-      const inner = dragTargetRef.current;
-      if (inner) {
-        const blocker = (ev: Event) => { ev.stopPropagation(); };
-        inner.addEventListener('click', blocker, { capture: true, once: true });
+      if (dragTarget) {
+        blockPanelDragClick(dragTarget);
       }
     }
     dragTargetRef.current = null;
@@ -148,6 +143,7 @@ export function DialRoot({ position = 'top-right', defaultOpen = true, mode = 'p
     right: 'auto' as const,
     bottom: 'auto' as const,
   } : undefined;
+  const originX = getPanelOriginX(activePosition, dragOffset);
 
   const content = (
   <ShortcutListener>
@@ -156,11 +152,13 @@ export function DialRoot({ position = 'top-right', defaultOpen = true, mode = 'p
         ref={panelRef}
         className="dialkit-panel"
         data-position={inline ? undefined : (dragOffset ? undefined : activePosition)}
+        data-origin-x={inline ? undefined : originX}
         data-mode={mode}
         style={dragStyle}
         onPointerDown={!inline ? handlePointerDown : undefined}
         onPointerMove={!inline ? handlePointerMove : undefined}
         onPointerUp={!inline ? handlePointerUp : undefined}
+        onPointerCancel={!inline ? handlePointerUp : undefined}
       >
         {panels.map((panel) => (
           <Panel key={panel.id} panel={panel} defaultOpen={inline || defaultOpen} inline={inline} />

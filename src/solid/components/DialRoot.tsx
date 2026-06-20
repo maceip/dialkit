@@ -1,9 +1,19 @@
-import { createSignal, onMount, onCleanup, Show, For } from 'solid-js';
+import { createEffect, createSignal, onCleanup, onMount, Show, For } from 'solid-js';
 import { Portal } from 'solid-js/web';
 import { DialStore } from '../../store/DialStore';
 import type { PanelConfig } from '../../store/DialStore';
 import { ShortcutListener } from './ShortcutListener';
 import { Panel } from './Panel';
+import {
+  blockPanelDragClick,
+  getPanelDragHandle,
+  getPanelDragOffset,
+  getPanelDragStart,
+  getPanelOriginX,
+  hasPanelDragMoved,
+  type PanelDragOffset,
+  type PanelDragStart,
+} from '../../panel-drag';
 
 export type DialPosition = 'top-right' | 'top-left' | 'bottom-right' | 'bottom-left';
 export type DialMode = 'popover' | 'inline';
@@ -29,7 +39,15 @@ export function DialRoot(props: DialRootProps) {
   if ((props.productionEnabled ?? isDevDefault) === false) return null;
   const [panels, setPanels] = createSignal<PanelConfig[]>([]);
   const [mounted, setMounted] = createSignal(false);
+  const [dragOffset, setDragOffset] = createSignal<PanelDragOffset | null>(null);
+  const [activePosition, setActivePosition] = createSignal<DialPosition>(props.position ?? 'top-right');
   const inline = () => (props.mode ?? 'popover') === 'inline';
+  let panelRef: HTMLDivElement | undefined;
+  let lastDragOffset: PanelDragOffset | null = null;
+  let dragging = false;
+  let dragStart: PanelDragStart | null = null;
+  let didDrag = false;
+  let dragTarget: HTMLElement | null = null;
 
   onMount(() => {
     setMounted(true);
@@ -40,10 +58,103 @@ export function DialRoot(props: DialRootProps) {
     onCleanup(unsub);
   });
 
+  createEffect(() => {
+    if (!mounted() || inline() || !panelRef) return;
+
+    const observer = new MutationObserver(() => {
+      const inners = panelRef?.querySelectorAll('.dialkit-panel-inner');
+      if (!inners || inners.length === 0) return;
+      const collapsed = Array.from(inners).every((el) => el.getAttribute('data-collapsed') === 'true');
+      const currentDragOffset = dragOffset();
+
+      if (!collapsed) {
+        if (currentDragOffset) {
+          lastDragOffset = currentDragOffset;
+          const bubbleCenterX = currentDragOffset.x + 21;
+          setActivePosition(bubbleCenterX < window.innerWidth / 2 ? 'top-left' : 'top-right');
+        } else {
+          setActivePosition(props.position ?? 'top-right');
+        }
+        setDragOffset(null);
+      } else if (currentDragOffset) {
+        lastDragOffset = currentDragOffset;
+      } else if (lastDragOffset) {
+        setDragOffset(lastDragOffset);
+      }
+    });
+
+    observer.observe(panelRef, { subtree: true, attributes: true, attributeFilter: ['data-collapsed'] });
+    onCleanup(() => observer.disconnect());
+  });
+
+  const handlePointerDown = (event: PointerEvent) => {
+    const panel = panelRef ?? null;
+    const handle = getPanelDragHandle(event.target, panel);
+    if (!panel || !handle) return;
+
+    dragTarget = handle;
+    dragStart = getPanelDragStart(event.clientX, event.clientY, panel);
+    didDrag = false;
+    dragging = true;
+    handle.setPointerCapture(event.pointerId);
+  };
+
+  const handlePointerMove = (event: PointerEvent) => {
+    if (!dragging || !dragStart) return;
+
+    if (!didDrag && !hasPanelDragMoved(dragStart, event.clientX, event.clientY)) return;
+    didDrag = true;
+
+    setDragOffset(getPanelDragOffset(dragStart, event.clientX, event.clientY));
+  };
+
+  const handlePointerUp = (event: PointerEvent) => {
+    if (!dragging) return;
+    dragging = false;
+    dragStart = null;
+    const handle = dragTarget;
+
+    if (handle?.hasPointerCapture(event.pointerId)) {
+      handle.releasePointerCapture(event.pointerId);
+    }
+
+    if (didDrag) {
+      event.stopPropagation();
+      if (handle) {
+        blockPanelDragClick(handle);
+      }
+    }
+
+    dragTarget = null;
+  };
+
+  const dragStyle = () => {
+    const offset = dragOffset();
+    return offset
+      ? {
+        top: `${offset.y}px`,
+        left: `${offset.x}px`,
+        right: 'auto',
+        bottom: 'auto',
+      }
+      : undefined;
+  };
+
   const content = () => (
     <ShortcutListener>
       <div class="dialkit-root" data-mode={props.mode ?? 'popover'} data-theme={props.theme ?? 'system'}>
-        <div class="dialkit-panel" data-position={inline() ? undefined : (props.position ?? 'top-right')} data-mode={props.mode ?? 'popover'}>
+        <div
+          ref={panelRef}
+          class="dialkit-panel"
+          data-position={inline() ? undefined : (dragOffset() ? undefined : activePosition())}
+          data-origin-x={inline() ? undefined : getPanelOriginX(activePosition(), dragOffset())}
+          data-mode={props.mode ?? 'popover'}
+          style={dragStyle()}
+          onPointerDown={!inline() ? handlePointerDown : undefined}
+          onPointerMove={!inline() ? handlePointerMove : undefined}
+          onPointerUp={!inline() ? handlePointerUp : undefined}
+          onPointerCancel={!inline() ? handlePointerUp : undefined}
+        >
           <For each={panels()}>
             {(panel) => <Panel panel={panel} defaultOpen={inline() || (props.defaultOpen ?? true)} inline={inline()} />}
           </For>
