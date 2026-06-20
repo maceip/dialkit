@@ -13,7 +13,11 @@
     "declaration": true,
     "declarationMap": true,
     "resolveJsonModule": true,
-    "isolatedModules": true
+    "isolatedModules": true,
+    "baseUrl": ".",
+    "paths": {
+      "dialkit/store": ["src/store/DialStore.ts"]
+    }
   },
   "include": [
     "src/index.ts",
