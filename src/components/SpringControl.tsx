@@ -3,7 +3,7 @@ import { Folder } from './Folder';
 import { Slider } from './Slider';
 import { SegmentedControl } from './SegmentedControl';
 import { SpringVisualization } from './SpringVisualization';
-import { useSyncExternalStore, useRef } from 'react';
+import { useCallback, useRef, useSyncExternalStore } from 'react';
 
 interface SpringControlProps {
   panelId: string;
@@ -14,11 +14,15 @@ interface SpringControlProps {
 }
 
 export function SpringControl({ panelId, path, label, spring, onChange }: SpringControlProps) {
-  const mode = useSyncExternalStore(
-    (cb) => DialStore.subscribe(panelId, cb),
-    () => DialStore.getSpringMode(panelId, path),
-    () => DialStore.getSpringMode(panelId, path)
+  const subscribe = useCallback(
+    (callback: () => void) => DialStore.subscribe(panelId, callback),
+    [panelId]
   );
+  const getSnapshot = useCallback(
+    () => DialStore.getSpringMode(panelId, path),
+    [panelId, path]
+  );
+  const mode = useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
 
   const isSimpleMode = mode === 'simple';
 

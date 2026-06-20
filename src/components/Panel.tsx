@@ -1,4 +1,4 @@
-import { useState, useContext, useSyncExternalStore } from 'react';
+import { useCallback, useContext, useState, useSyncExternalStore } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { DialStore, ControlMeta, PanelConfig, SpringConfig, TransitionConfig } from '../store/DialStore';
 import { ShortcutContext } from './ShortcutListener';
@@ -25,13 +25,17 @@ export function Panel({ panel, defaultOpen = true, inline = false }: PanelProps)
   const [isPanelOpen, setIsPanelOpen] = useState(defaultOpen);
   const shortcutCtx = useContext(ShortcutContext);
   const hasShortcuts = Object.keys(panel.shortcuts).length > 0;
+  const subscribe = useCallback(
+    (callback: () => void) => DialStore.subscribe(panel.id, callback),
+    [panel.id]
+  );
+  const getSnapshot = useCallback(
+    () => DialStore.getValues(panel.id),
+    [panel.id]
+  );
 
   // Subscribe to panel value changes
-  const values = useSyncExternalStore(
-    (cb) => DialStore.subscribe(panel.id, cb),
-    () => DialStore.getValues(panel.id),
-    () => DialStore.getValues(panel.id)
-  );
+  const values = useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
 
   const presets = DialStore.getPresets(panel.id);
   const activePresetId = DialStore.getActivePresetId(panel.id);

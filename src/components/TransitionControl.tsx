@@ -4,7 +4,7 @@ import { Slider } from './Slider';
 import { SegmentedControl } from './SegmentedControl';
 import { SpringVisualization } from './SpringVisualization';
 import { EasingVisualization } from './EasingVisualization';
-import { useSyncExternalStore, useRef, useState } from 'react';
+import { useCallback, useRef, useState, useSyncExternalStore } from 'react';
 
 interface TransitionControlProps {
   panelId: string;
@@ -17,11 +17,15 @@ interface TransitionControlProps {
 type CurveMode = 'easing' | 'simple' | 'advanced';
 
 export function TransitionControl({ panelId, path, label, value, onChange }: TransitionControlProps) {
-  const mode = useSyncExternalStore(
-    (cb) => DialStore.subscribe(panelId, cb),
-    () => DialStore.getTransitionMode(panelId, path),
-    () => DialStore.getTransitionMode(panelId, path)
+  const subscribe = useCallback(
+    (callback: () => void) => DialStore.subscribe(panelId, callback),
+    [panelId]
   );
+  const getSnapshot = useCallback(
+    () => DialStore.getTransitionMode(panelId, path),
+    [panelId, path]
+  );
+  const mode = useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
 
   const isEasing = mode === 'easing';
   const isSimpleSpring = mode === 'simple';
