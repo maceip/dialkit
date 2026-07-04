@@ -55,6 +55,8 @@ class DevSessionStoreImpl {
   private enabled = false;
   private notes: DevNote[] = [];
   private changes: DialChangeEntry[] = [];
+  private notesSnapshot: DevNote[] = [];
+  private pendingChangesSnapshot: DialChangeEntry[] = [];
   private listeners = new Set<Listener>();
   private unsubscribeDial: (() => void) | null = null;
 
@@ -104,11 +106,11 @@ class DevSessionStoreImpl {
   }
 
   getNotes(): DevNote[] {
-    return [...this.notes].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
+    return this.notesSnapshot;
   }
 
   getOpenNotes(): DevNote[] {
-    return this.getNotes().filter((n) => n.status === 'open' && !n.exportedAt);
+    return this.notesSnapshot.filter((n) => n.status === 'open' && !n.exportedAt);
   }
 
   getChanges(): DialChangeEntry[] {
@@ -116,7 +118,7 @@ class DevSessionStoreImpl {
   }
 
   getPendingChanges(): DialChangeEntry[] {
-    return this.getChanges().filter((c) => !c.exportedAt);
+    return this.pendingChangesSnapshot;
   }
 
   addNote(input: {
@@ -301,6 +303,7 @@ class DevSessionStoreImpl {
     if (!storage) {
       this.notes = [];
       this.changes = [];
+      this.rebuildSnapshots();
       return;
     }
     try {
@@ -308,12 +311,14 @@ class DevSessionStoreImpl {
       if (!raw) {
         this.notes = [];
         this.changes = [];
+        this.rebuildSnapshots();
         return;
       }
       const parsed = JSON.parse(raw) as DevSessionState;
       if (parsed?.version !== STORAGE_VERSION) {
         this.notes = [];
         this.changes = [];
+        this.rebuildSnapshots();
         return;
       }
       this.notes = Array.isArray(parsed.notes) ? parsed.notes : [];
@@ -322,6 +327,7 @@ class DevSessionStoreImpl {
       this.notes = [];
       this.changes = [];
     }
+    this.rebuildSnapshots();
   }
 
   private save(): void {
@@ -350,7 +356,15 @@ class DevSessionStoreImpl {
   }
 
   private notify(): void {
+    this.rebuildSnapshots();
     this.listeners.forEach((fn) => fn());
+  }
+
+  private rebuildSnapshots(): void {
+    this.notesSnapshot = [...this.notes].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
+    this.pendingChangesSnapshot = [...this.changes]
+      .filter((c) => !c.exportedAt)
+      .sort((a, b) => b.at.localeCompare(a.at));
   }
 }
 
