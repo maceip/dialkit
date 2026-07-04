@@ -75,6 +75,20 @@ export function FeedbackPanel({ defaultOpen = true, inline = false }: FeedbackPa
     };
   }, [picking, hover, target]);
 
+  useEffect(() => {
+    if (!picking) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape') return;
+      e.preventDefault();
+      setPicking(false);
+      hover?.classList.remove('dialkit-feedback-highlight');
+      setHover(null);
+      setStatus('Tag cancelled.');
+    };
+    window.addEventListener('keydown', onKey, true);
+    return () => window.removeEventListener('keydown', onKey, true);
+  }, [picking, hover]);
+
   const selectedPanel = panels.find((p) => p.id === panelId);
 
   const handleSaveNote = () => {
