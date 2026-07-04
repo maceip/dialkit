@@ -112,6 +112,13 @@ export type PanelConfig = {
 type Listener = () => void;
 type ActionListener = (action: string) => void;
 
+export type DialChangeEvent = {
+  panelId: string;
+  path: string;
+  value: DialValue;
+};
+type ChangeListener = (event: DialChangeEvent) => void;
+
 export type Preset = {
   id: string;
   name: string;
@@ -295,6 +302,7 @@ class DialStoreClass {
   private registrationCounts: Map<string, number> = new Map();
   private retainedPanels: Set<string> = new Set();
   private persistConfigs: Map<string, PersistConfig> = new Map();
+  private changeListeners: Set<ChangeListener> = new Set();
 
   registerPanel(id: string, name: string, config: DialConfig, shortcuts?: Record<string, ShortcutConfig>, options: DialStorePanelOptions = {}): void {
     this.configurePanelRetention(id, options);
@@ -442,7 +450,15 @@ class DialStoreClass {
     // Create a new snapshot reference so useSyncExternalStore detects the change
     this.snapshots.set(panelId, { ...panel.values });
     this.persistPanel(panelId);
+    for (const [path, value] of Object.entries(validUpdates)) {
+      this.changeListeners.forEach((fn) => fn({ panelId, path, value }));
+    }
     this.notify(panelId);
+  }
+
+  subscribeChanges(listener: ChangeListener): () => void {
+    this.changeListeners.add(listener);
+    return () => this.changeListeners.delete(listener);
   }
 
   resetValues(panelId: string): void {

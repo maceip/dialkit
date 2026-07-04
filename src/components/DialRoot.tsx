@@ -4,6 +4,8 @@ import { DialStore, PanelConfig } from '../store/DialStore';
 import { Folder } from './Folder';
 import { Panel } from './Panel';
 import { ShortcutListener } from './ShortcutListener';
+import { FeedbackPanel } from './FeedbackPanel';
+import { DevSessionStore } from '../store/DevSessionStore';
 import { blockPanelDragClick, getPanelDragHandle, getPanelDragOffset, getPanelDragStart, getPanelOriginX, hasPanelDragMoved } from '../panel-drag';
 
 export type DialPosition = 'top-right' | 'top-left' | 'bottom-right' | 'bottom-left';
@@ -24,11 +26,22 @@ interface DialRootProps {
   mode?: DialMode;
   theme?: DialTheme;
   productionEnabled?: boolean;
+  devSession?: boolean | { projectKey?: string };
   onOpenChange?: (open: boolean) => void;
 }
 
-export function DialRoot({ position = 'top-right', defaultOpen = true, mode = 'popover', theme = 'system', productionEnabled = isDevDefault, onOpenChange }: DialRootProps) {
+export function DialRoot({
+  position = 'top-right',
+  defaultOpen = true,
+  mode = 'popover',
+  theme = 'system',
+  productionEnabled = isDevDefault,
+  devSession = false,
+  onOpenChange,
+}: DialRootProps) {
   if (!productionEnabled) return null;
+  const devSessionEnabled = Boolean(devSession);
+  const projectKey = typeof devSession === 'object' ? (devSession.projectKey ?? 'default') : 'default';
   const [panels, setPanels] = useState<PanelConfig[]>([]);
   const [mounted, setMounted] = useState(false);
   const inline = mode === 'inline';
@@ -48,6 +61,9 @@ export function DialRoot({ position = 'top-right', defaultOpen = true, mode = 'p
   // Subscribe to global panel changes
   useEffect(() => {
     setMounted(true);
+    if (devSessionEnabled) {
+      DevSessionStore.configure(projectKey);
+    }
     setPanels(DialStore.getPanels());
 
     const unsubscribe = DialStore.subscribeGlobal(() => {
@@ -55,7 +71,7 @@ export function DialRoot({ position = 'top-right', defaultOpen = true, mode = 'p
     });
 
     return unsubscribe;
-  }, []);
+  }, [devSessionEnabled, projectKey]);
 
   useEffect(() => {
     const fallbackOpen = inline || defaultOpen;
@@ -164,8 +180,8 @@ export function DialRoot({ position = 'top-right', defaultOpen = true, mode = 'p
     return null;
   }
 
-  // Don't render if no panels registered
-  if (panels.length === 0) {
+  // Don't render if no panels registered (unless dev session notes are enabled)
+  if (panels.length === 0 && !devSessionEnabled) {
     return null;
   }
 
@@ -212,18 +228,22 @@ export function DialRoot({ position = 'top-right', defaultOpen = true, mode = 'p
                   variant="section"
                 />
               ))}
+              {devSessionEnabled ? <FeedbackPanel defaultOpen={true} inline={inline} /> : null}
             </Folder>
           </div>
         ) : (
-          panels.map((panel) => (
-            <Panel
-              key={panel.id}
-              panel={panel}
-              defaultOpen={inline || defaultOpen}
-              inline={inline}
-              onOpenChange={(open) => handlePanelOpenChange(panel.id, open)}
-            />
-          ))
+          <>
+            {panels.map((panel) => (
+              <Panel
+                key={panel.id}
+                panel={panel}
+                defaultOpen={inline || defaultOpen}
+                inline={inline}
+                onOpenChange={(open) => handlePanelOpenChange(panel.id, open)}
+              />
+            ))}
+            {devSessionEnabled ? <FeedbackPanel defaultOpen={inline || defaultOpen} inline={inline} /> : null}
+          </>
         )}
       </div>
     </div>

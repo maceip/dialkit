@@ -1,10 +1,18 @@
 // Main hook
 export { useDialKit, useDialKitController } from './hooks/useDialKit';
 export type { DialKitController, UseDialOptions } from './hooks/useDialKit';
+export { useDevDialKit, useDevDialKitController } from './hooks/useDevDialKit';
 
 // Root component (user mounts once)
 export { DialRoot } from './components/DialRoot';
 export type { DialPosition, DialMode, DialTheme } from './components/DialRoot';
+export { FeedbackPanel } from './components/FeedbackPanel';
+
+// Dev session (notes + change queue for agents)
+export { DevSessionStore } from './store/DevSessionStore';
+export type { DevNote, DialChangeEntry } from './store/DevSessionStore';
+export { inspectElement, cssPath } from './utils/dom-inspect';
+export type { ElementInfo } from './utils/dom-inspect';
 
 // Individual components (for advanced usage)
 export { Slider } from './components/Slider';
@@ -41,5 +49,6 @@ export type {
   DialKitValueUpdates,
   ResolvedValues,
   ControlMeta,
+  DialChangeEvent,
   PanelConfig,
 } from './store/DialStore';

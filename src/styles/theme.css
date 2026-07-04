@@ -1422,3 +1422,140 @@
   }
 
 }
+
+/* ── Dev feedback / agent notes ── */
+.dialkit-feedback-highlight {
+  outline: 2px solid #2563eb !important;
+  outline-offset: 2px !important;
+  cursor: crosshair !important;
+}
+
+.dialkit-feedback-selected {
+  outline: 2px solid #f59e0b !important;
+  outline-offset: 2px !important;
+}
+
+.dialkit-feedback-meta {
+  font-size: 11px;
+  color: var(--dial-text-secondary);
+  margin-bottom: 8px;
+}
+
+.dialkit-feedback-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 8px;
+  font-size: 11px;
+  color: var(--dial-text-label);
+}
+
+.dialkit-feedback-select,
+.dialkit-feedback-textarea {
+  width: 100%;
+  border: 1px solid var(--dial-border);
+  border-radius: 8px;
+  background: var(--dial-surface);
+  color: var(--dial-text-primary);
+  font-size: 12px;
+  padding: 8px;
+  font-family: inherit;
+}
+
+.dialkit-feedback-target {
+  font-size: 11px;
+  color: var(--dial-text-secondary);
+  margin-bottom: 8px;
+  line-height: 1.45;
+  word-break: break-word;
+}
+
+.dialkit-feedback-target code {
+  display: block;
+  margin-top: 4px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 10px;
+  color: var(--dial-text-primary);
+}
+
+.dialkit-feedback-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.dialkit-feedback-btn-primary {
+  background: #2563eb !important;
+  color: #fff !important;
+}
+
+.dialkit-feedback-btn-accent {
+  background: #111827 !important;
+  color: #fff !important;
+}
+
+.dialkit-feedback-status {
+  margin-top: 8px;
+  font-size: 11px;
+  color: #059669;
+}
+
+.dialkit-feedback-notes {
+  margin-top: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 220px;
+  overflow-y: auto;
+}
+
+.dialkit-feedback-note {
+  border: 1px solid var(--dial-border);
+  border-radius: 8px;
+  padding: 8px;
+  background: var(--dial-surface-subtle);
+}
+
+.dialkit-feedback-note-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 11px;
+  margin-bottom: 4px;
+}
+
+.dialkit-feedback-note p {
+  margin: 4px 0 0;
+  font-size: 11px;
+  line-height: 1.45;
+  color: var(--dial-text-primary);
+}
+
+.dialkit-feedback-note-actions,
+.dialkit-feedback-footer {
+  display: flex;
+  gap: 10px;
+  margin-top: 8px;
+  flex-wrap: wrap;
+}
+
+.dialkit-feedback-link {
+  background: none;
+  border: none;
+  padding: 0;
+  font-size: 11px;
+  color: var(--dial-text-secondary);
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+.dialkit-feedback-link-danger {
+  color: #f87171;
+}
+
+.dialkit-panel-section-toolbar {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 6px;
+}
