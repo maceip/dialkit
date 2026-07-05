@@ -70,7 +70,10 @@
     "build:svelte": "node scripts/gen-theme-css.js && svelte-package -i src/svelte -o dist/svelte && bash scripts/clean-src-artifacts.sh",
     "dev": "tsup --watch",
     "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.solid.json && tsc --noEmit -p tsconfig.vue.json && node scripts/gen-theme-css.js && svelte-check --tsconfig tsconfig.svelte.json",
-    "test": "vitest run"
+    "test": "vitest run",
+    "build:example": "npm run build && cd example && npm install && npm run build",
+    "preview:example": "cd example && npm run preview",
+    "test:e2e": "playwright test"
   },
   "peerDependencies": {
     "motion": ">=11.0.0",
@@ -115,6 +118,7 @@
     "svelte-check": "^4.0.0",
     "tsup": "^8.0.0",
     "typescript": "^5.3.0",
+    "@playwright/test": "^1.52.0",
     "vitest": "^3.2.6",
     "vue": "^3.5.0"
   },
@@ -129,6 +133,7 @@
     "devtools"
   ],
   "license": "MIT",
+  "homepage": "https://maceip.github.io/dialkit/",
   "repository": {
     "type": "git",
     "url": "https://github.com/maceip/dialkit"

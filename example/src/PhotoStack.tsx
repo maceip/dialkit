@@ -1,12 +1,13 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { useDevDialKit } from 'dialkit';
+import { useDevDialKit, useDialKit } from 'dialkit';
+import { photoPlaceholder } from './photo-utils';
 
 const PHOTOS = [
-  { id: 1, src: '/photos/one.avif', color: '#c41e3a' },
-  { id: 2, src: '/photos/two.avif', color: '#1a1a2e' },
-  { id: 3, src: '/photos/three.avif', color: '#e8d5b7' },
-  { id: 4, src: '/photos/four.avif', color: '#2d5a27' },
+  { id: 1, src: photoPlaceholder('#c41e3a', 'Kyoto'), color: '#c41e3a' },
+  { id: 2, src: photoPlaceholder('#1a1a2e', 'Tokyo'), color: '#1a1a2e' },
+  { id: 3, src: photoPlaceholder('#e8d5b7', 'Osaka'), color: '#e8d5b7' },
+  { id: 4, src: photoPlaceholder('#2d5a27', 'Hakone'), color: '#2d5a27' },
 ];
 
 export function PhotoStack() {

@@ -1,10 +1,24 @@
-# dialkit v1.4.0-dev.1
+# dialkit v1.4.0
 
 <img src="https://joshpuckett.me/images/dialkit.png" width="100%" />
+
+**Live demo:** https://maceip.github.io/dialkit/ · [Interactive demo](https://maceip.github.io/dialkit/demo) · [GitHub](https://github.com/maceip/dialkit)
 
 Real-time parameter tweaking for React, Solid, Svelte, and Vue, created by Josh Puckett.
 
 To learn more about how I use DialKit, and approach design in general, feel free to check out [Interface Craft](http://interfacecraft.dev/).
+
+## Run the demo locally
+
+```bash
+git clone https://github.com/maceip/dialkit.git
+cd dialkit
+npm install
+npm run build:example
+cd example && npm run preview
+```
+
+Open http://127.0.0.1:4173 — showcase at `/`, Photo Stack + dev session at `/demo`.
 
 ## Contributing
 
