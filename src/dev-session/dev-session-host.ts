@@ -274,14 +274,17 @@ export class DevSessionHost {
   private async saveNote(panel: HTMLDivElement): Promise<void> {
     const textarea = panel.querySelector('textarea');
     const comment = textarea instanceof HTMLTextAreaElement ? textarea.value : '';
+    const targetInfo = this.targetEl
+      ? inspectElement(this.targetEl) ?? this.targetInfo
+      : this.targetInfo;
     const panels = DialStore.getPanels();
-    const matched = matchPanelForTarget(this.targetInfo, panels);
-    const screenshotDataUrl = this.targetEl
-      ? await requestScreenshot(this.targetInfo!, this.targetEl)
+    const matched = matchPanelForTarget(targetInfo, panels);
+    const screenshotDataUrl = this.targetEl && targetInfo
+      ? await requestScreenshot(targetInfo, this.targetEl)
       : null;
     DevSessionStore.addNote({
       comment,
-      target: this.targetInfo,
+      target: targetInfo,
       panelId: matched?.id,
       panelName: matched?.name,
       dialSnapshot: matched ? DialStore.getValues(matched.id) : undefined,

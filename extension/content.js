@@ -1,6 +1,19 @@
 (function () {
   const FLAG = 'dialkit-extension-mounted';
   const SCRIPT_ID = 'dialkit-extension-inject';
+  let pendingEnableReadyListener = null;
+  let pendingEnableTimeout = null;
+
+  function clearPendingEnable() {
+    if (pendingEnableReadyListener) {
+      window.removeEventListener('message', pendingEnableReadyListener);
+      pendingEnableReadyListener = null;
+    }
+    if (pendingEnableTimeout !== null) {
+      clearTimeout(pendingEnableTimeout);
+      pendingEnableTimeout = null;
+    }
+  }
 
   function injectScript() {
     if (document.getElementById(SCRIPT_ID)) return;
@@ -31,6 +44,7 @@
   }
 
   function enable(projectKey) {
+    clearPendingEnable();
     injectScript();
     if (window.__DIALKIT__) {
       mountDialKit(projectKey);
@@ -39,17 +53,19 @@
 
     const onReady = (event) => {
       if (event.source !== window || event.data?.type !== 'dialkit-ready') return;
-      window.removeEventListener('message', onReady);
+      clearPendingEnable();
       mountDialKit(projectKey);
     };
+    pendingEnableReadyListener = onReady;
     window.addEventListener('message', onReady);
-    setTimeout(() => {
-      window.removeEventListener('message', onReady);
+    pendingEnableTimeout = setTimeout(() => {
+      clearPendingEnable();
       mountDialKit(projectKey);
     }, 5000);
   }
 
   function disableScript() {
+    clearPendingEnable();
     if (window.__DIALKIT__) {
       window.__DIALKIT__.disable();
     } else {
