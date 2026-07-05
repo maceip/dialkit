@@ -1,14 +1,18 @@
 (function () {
   const FLAG = 'dialkit-extension-mounted';
   const SCRIPT_ID = 'dialkit-extension-inject';
+  const STYLE_ID = 'dialkit-extension-styles';
+
+  let activeProjectKey = 'extension';
+  let activeOnPage = false;
+  let readyListener = null;
 
   function injectScript() {
     if (document.getElementById(SCRIPT_ID)) return;
-    document.documentElement.setAttribute(FLAG, '1');
 
-    if (!document.getElementById('dialkit-extension-styles')) {
+    if (!document.getElementById(STYLE_ID)) {
       const link = document.createElement('link');
-      link.id = 'dialkit-extension-styles';
+      link.id = STYLE_ID;
       link.rel = 'stylesheet';
       link.href = chrome.runtime.getURL('styles.css');
       document.head.appendChild(link);
@@ -22,7 +26,8 @@
   }
 
   function mountDialKit(projectKey) {
-    const key = projectKey ?? 'extension';
+    const key = projectKey || activeProjectKey || 'extension';
+    activeProjectKey = key;
     if (window.__DIALKIT__) {
       window.__DIALKIT__.mount(key);
       return;
@@ -30,32 +35,63 @@
     window.postMessage({ type: 'dialkit-dev-session-enable', projectKey: key }, '*');
   }
 
-  function enable(projectKey) {
-    injectScript();
-    if (window.__DIALKIT__) {
-      mountDialKit(projectKey);
-      return;
+  function waitForReady(projectKey) {
+    if (readyListener) {
+      window.removeEventListener('message', readyListener);
+      readyListener = null;
     }
 
     const onReady = (event) => {
       if (event.source !== window || event.data?.type !== 'dialkit-ready') return;
       window.removeEventListener('message', onReady);
+      readyListener = null;
       mountDialKit(projectKey);
     };
+
+    readyListener = onReady;
     window.addEventListener('message', onReady);
     setTimeout(() => {
+      if (!readyListener) return;
       window.removeEventListener('message', onReady);
+      readyListener = null;
       mountDialKit(projectKey);
     }, 5000);
   }
 
-  function disableScript() {
+  function enable(projectKey) {
+    activeProjectKey = projectKey || activeProjectKey || 'extension';
+    injectScript();
+    document.documentElement.setAttribute(FLAG, '1');
+    activeOnPage = true;
+
+    if (window.__DIALKIT__) {
+      mountDialKit(activeProjectKey);
+      return;
+    }
+
+    waitForReady(activeProjectKey);
+  }
+
+  function disable() {
+    if (readyListener) {
+      window.removeEventListener('message', readyListener);
+      readyListener = null;
+    }
+
     if (window.__DIALKIT__) {
       window.__DIALKIT__.disable();
     } else {
       window.postMessage({ type: 'dialkit-dev-session-disable' }, '*');
     }
+
     document.documentElement.removeAttribute(FLAG);
+    activeOnPage = false;
+  }
+
+  function applySettings(enabled, projectKey) {
+    activeProjectKey = projectKey || activeProjectKey || 'extension';
+    if (enabled) enable(activeProjectKey);
+    else disable();
   }
 
   function cropDataUrlToRect(dataUrl, rect) {
@@ -94,33 +130,37 @@
 
   window.addEventListener('message', (event) => {
     if (event.source !== window) return;
-    if (event.data?.type === 'dialkit-request-screenshot') {
-      const rect = event.data.rect;
-      chrome.runtime.sendMessage({ type: 'capture-tab' }, (response) => {
-        const dataUrl = response?.dataUrl ?? null;
-        const finish = (cropped) => {
-          window.postMessage({
-            type: 'dialkit-screenshot',
-            dataUrl: cropped,
-          }, '*');
-        };
-        if (dataUrl && rect) {
-          cropDataUrlToRect(dataUrl, rect).then(finish);
-        } else {
-          finish(dataUrl);
-        }
-      });
-    }
+    if (event.data?.type !== 'dialkit-request-screenshot') return;
+
+    const rect = event.data.rect;
+    chrome.runtime.sendMessage({ type: 'capture-tab' }, (response) => {
+      const dataUrl = response?.dataUrl ?? null;
+      const finish = (cropped) => {
+        window.postMessage({ type: 'dialkit-screenshot', dataUrl: cropped }, '*');
+      };
+      if (dataUrl && rect) {
+        cropDataUrlToRect(dataUrl, rect).then(finish);
+        return;
+      }
+      finish(dataUrl);
+    });
   });
 
   chrome.storage.sync.get(['enabled', 'projectKey'], (result) => {
-    if (result.enabled) enable(result.projectKey);
+    applySettings(Boolean(result.enabled), result.projectKey || 'extension');
+  });
+
+  chrome.storage.onChanged.addListener((changes, area) => {
+    if (area !== 'sync') return;
+    if (!changes.enabled && !changes.projectKey) return;
+
+    chrome.storage.sync.get(['enabled', 'projectKey'], (result) => {
+      applySettings(Boolean(result.enabled), result.projectKey || 'extension');
+    });
   });
 
   chrome.runtime.onMessage.addListener((message) => {
-    if (message?.type === 'dialkit-toggle') {
-      if (message.enabled) enable(message.projectKey);
-      else disableScript();
-    }
+    if (message?.type !== 'dialkit-toggle') return;
+    applySettings(Boolean(message.enabled), message.projectKey || 'extension');
   });
 })();

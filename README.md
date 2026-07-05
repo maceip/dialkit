@@ -903,7 +903,7 @@ function Card() {
 
 **Exports:** markdown agent report (with CSS patch + optional screenshot) and JSON session sync.
 
-**Extension:** loads full `DialRoot` + dev session on any page after `npm run build:extension` and loading `extension/` unpacked in Chrome.
+**Extension:** build with `npm run build:extension`, then load the `extension/` folder unpacked in Chrome. See [extension/README.md](extension/README.md).
 
 **Query param:** `?dialkit-dev=1&dialkit-project=my-app`
 

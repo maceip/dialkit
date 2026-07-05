@@ -66,7 +66,7 @@
   "scripts": {
     "prepare": "npm run build",
     "build": "rm -rf dist && tsup && npm run build:svelte && npm run build:extension && bash scripts/clean-src-artifacts.sh",
-    "build:extension": "cp dist/inject/inject.js extension/inject.js && cp dist/styles.css extension/styles.css",
+    "build:extension": "node scripts/gen-extension-icons.mjs && cp dist/inject/inject.js extension/inject.js && cp dist/styles.css extension/styles.css && node scripts/verify-extension.mjs",
     "build:svelte": "node scripts/gen-theme-css.js && svelte-package -i src/svelte -o dist/svelte && bash scripts/clean-src-artifacts.sh",
     "dev": "tsup --watch",
     "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.solid.json && tsc --noEmit -p tsconfig.vue.json && node scripts/gen-theme-css.js && svelte-check --tsconfig tsconfig.svelte.json",
