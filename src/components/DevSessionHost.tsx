@@ -6,6 +6,8 @@ interface DevSessionHostProps {
 }
 
 export function DevSessionHost({ projectKey = 'default' }: DevSessionHostProps) {
-  useEffect(() => mountDevSessionHost({ projectKey }), [projectKey]);
+  useEffect(() => {
+    return mountDevSessionHost({ projectKey });
+  }, [projectKey]);
   return null;
 }

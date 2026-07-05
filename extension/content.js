@@ -1,8 +1,9 @@
 (function () {
   const FLAG = 'dialkit-extension-mounted';
+  const SCRIPT_ID = 'dialkit-extension-inject';
 
   function injectScript() {
-    if (document.documentElement.getAttribute(FLAG)) return;
+    if (document.getElementById(SCRIPT_ID)) return;
     document.documentElement.setAttribute(FLAG, '1');
 
     if (!document.getElementById('dialkit-extension-styles')) {
@@ -14,9 +15,18 @@
     }
 
     const script = document.createElement('script');
+    script.id = SCRIPT_ID;
     script.src = chrome.runtime.getURL('inject.js');
     script.type = 'module';
     document.documentElement.appendChild(script);
+  }
+
+  function enable(projectKey) {
+    injectScript();
+    window.postMessage({
+      type: 'dialkit-dev-session-enable',
+      projectKey: projectKey ?? 'extension',
+    }, '*');
   }
 
   function disableScript() {
@@ -37,20 +47,13 @@
   });
 
   chrome.storage.sync.get(['enabled', 'projectKey'], (result) => {
-    if (result.enabled) injectScript();
+    if (result.enabled) enable(result.projectKey);
   });
 
   chrome.runtime.onMessage.addListener((message) => {
     if (message?.type === 'dialkit-toggle') {
-      if (message.enabled) {
-        injectScript();
-        window.postMessage({
-          type: 'dialkit-dev-session-enable',
-          projectKey: message.projectKey ?? 'extension',
-        }, '*');
-      } else {
-        disableScript();
-      }
+      if (message.enabled) enable(message.projectKey);
+      else disableScript();
     }
   });
 })();

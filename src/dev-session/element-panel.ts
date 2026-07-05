@@ -6,6 +6,7 @@ import {
   type CssPropertyDef,
 } from './css-inspector';
 import type { ElementInfo } from '../utils/dom-inspect';
+import { parseTranslate, applyTranslate } from './transform-utils';
 
 const ELEMENT_PANEL_PREFIX = 'dialkit:element:';
 
@@ -66,18 +67,11 @@ export function buildElementDialConfig(el: HTMLElement): DialConfig {
 
 function applyDialValueToElement(el: HTMLElement, path: string, value: DialValue): void {
   if (path === 'layout.translateX' || path === 'layout.translateY') {
-    const current = getComputedStyle(el).transform;
-    const match = current.match(/matrix\(([^)]+)\)/);
-    let tx = 0;
-    let ty = 0;
-    if (match) {
-      const parts = match[1].split(',').map((p) => parseFloat(p.trim()));
-      tx = parts[4] || 0;
-      ty = parts[5] || 0;
-    }
+    const current = el.style.transform || getComputedStyle(el).transform;
+    const { x: tx, y: ty } = parseTranslate(current);
     const x = path === 'layout.translateX' ? Number(value) : tx;
     const y = path === 'layout.translateY' ? Number(value) : ty;
-    el.style.transform = `translate(${x}px, ${y}px)`;
+    applyTranslate(el, x, y);
     return;
   }
 

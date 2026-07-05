@@ -31,16 +31,20 @@ interface DialRootProps {
   onOpenChange?: (open: boolean) => void;
 }
 
-export function DialRoot({
+export function DialRoot(props: DialRootProps) {
+  const enabled = props.productionEnabled ?? isDevDefault;
+  if (!enabled) return null;
+  return <DialRootInner {...props} />;
+}
+
+function DialRootInner({
   position = 'top-right',
   defaultOpen = true,
   mode = 'popover',
   theme = 'system',
-  productionEnabled = isDevDefault,
   devSession = false,
   onOpenChange,
 }: DialRootProps) {
-  if (!productionEnabled) return null;
   const devSessionEnabled = Boolean(devSession);
   const projectKey = typeof devSession === 'object' ? (devSession.projectKey ?? 'default') : 'default';
   const [panels, setPanels] = useState<PanelConfig[]>([]);

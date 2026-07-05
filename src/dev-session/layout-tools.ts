@@ -1,3 +1,5 @@
+import { parseTranslate, applyTranslate } from './transform-utils';
+
 export interface MeasureOverlay {
   el: HTMLDivElement;
   cleanup: () => void;
@@ -41,16 +43,7 @@ export function showMeasureOverlay(target: HTMLElement): MeasureOverlay {
   };
 }
 
-export function parseTranslate(transform: string): { x: number; y: number } {
-  const match = transform.match(/translate(?:3d)?\(([^)]+)\)/);
-  if (!match) return { x: 0, y: 0 };
-  const parts = match[1].split(',').map((p) => parseFloat(p.trim()));
-  return { x: parts[0] || 0, y: parts[1] || 0 };
-}
-
-export function applyTranslate(el: HTMLElement, x: number, y: number): void {
-  el.style.transform = `translate(${x}px, ${y}px)`;
-}
+export { parseTranslate, applyTranslate };
 
 export function alignElement(el: HTMLElement, alignment: 'left' | 'center' | 'right'): void {
   if (alignment === 'left') {

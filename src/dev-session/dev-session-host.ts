@@ -89,17 +89,23 @@ export class DevSessionHost {
     return () => this.listeners.delete(listener);
   }
 
-  setTarget(el: Element | null): void {
+  setTarget(el: Element | null, options?: { registerDialPanel?: boolean }): void {
     this.clearTargetHighlight();
     this.targetEl = el;
     this.targetInfo = el ? inspectElement(el) : null;
     if (el) {
       el.classList.add('dialkit-feedback-selected');
-      if (el instanceof HTMLElement) registerElementDialPanel(el, this.targetInfo!);
+      if (options?.registerDialPanel && el instanceof HTMLElement && this.targetInfo) {
+        registerElementDialPanel(el, this.targetInfo);
+      }
     } else {
       unregisterElementDialPanel();
     }
     this.notify();
+  }
+
+  tagTarget(el: Element): void {
+    this.setTarget(el, { registerDialPanel: false });
   }
 
   getTarget(): Element | null {
@@ -123,7 +129,7 @@ export class DevSessionHost {
   openCssInspector(el?: HTMLElement): void {
     const target = el ?? (this.targetEl instanceof HTMLElement ? this.targetEl : null);
     if (!target) return;
-    this.setTarget(target);
+    this.tagTarget(target);
     this.cssTarget = target;
     this.cssValues = readCssValues(target);
     this.renderCssFields();
@@ -141,7 +147,7 @@ export class DevSessionHost {
     if (!el || el.closest('.dialkit-root, .dialkit-dev-host')) return;
     e.preventDefault();
     e.stopPropagation();
-    this.setTarget(el);
+    this.setTarget(el, { registerDialPanel: false });
     this.menuPos = { x: e.clientX, y: e.clientY };
     this.positionFloating(this.contextMenu, e.clientX, e.clientY);
     this.contextMenu.hidden = false;
@@ -166,6 +172,9 @@ export class DevSessionHost {
       return;
     }
     if ((e.metaKey || e.ctrlKey) && e.key === 'z') {
+      const target = e.target as HTMLElement | null;
+      if (target?.closest('input, textarea, select, [contenteditable="true"], .dialkit-root')) return;
+      if (this.cssPanel.hidden) return;
       if (e.shiftKey) this.redoCss();
       else this.undoCss();
       e.preventDefault();
@@ -219,8 +228,8 @@ export class DevSessionHost {
       const action = btn.getAttribute('data-action');
       if (action === 'note') this.openNoteComposer(this.menuPos.x, this.menuPos.y);
       if (action === 'css') this.openCssInspector(this.targetEl);
-      if (action === 'dial') {
-        registerElementDialPanel(this.targetEl, this.targetInfo!);
+      if (action === 'dial' && this.targetEl instanceof HTMLElement && this.targetInfo) {
+        registerElementDialPanel(this.targetEl, this.targetInfo);
         this.contextMenu.hidden = true;
       }
       if (action === 'measure') {

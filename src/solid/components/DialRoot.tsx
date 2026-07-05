@@ -40,7 +40,15 @@ interface DialRootProps {
 }
 
 export function DialRoot(props: DialRootProps) {
-  if ((props.productionEnabled ?? isDevDefault) === false) return null;
+  const enabled = () => (props.productionEnabled ?? isDevDefault) !== false;
+  return (
+    <Show when={enabled()}>
+      <DialRootInner {...props} />
+    </Show>
+  );
+}
+
+function DialRootInner(props: DialRootProps) {
   const devSessionEnabled = () => Boolean(props.devSession);
   const projectKey = () => typeof props.devSession === 'object' ? (props.devSession.projectKey ?? 'default') : 'default';
   const [panels, setPanels] = createSignal<PanelConfig[]>([]);

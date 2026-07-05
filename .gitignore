@@ -5,15 +5,14 @@ node_modules/
 dist/
 .svelte-kit/
 
-# Generated artifacts from svelte-package
-src/store/DialStore.d.ts
-src/store/DialStore.d.ts.map
-src/store/DevSessionStore.d.ts
-src/store/DevSessionStore.d.ts.map
-src/dev-session/*.d.ts
-src/dev-session/*.d.ts.map
-src/utils/dom-inspect.d.ts
-src/utils/dom-inspect.d.ts.map
+# Extension bundles (built via npm run build:extension)
+extension/inject.js
+extension/styles.css
+
+# Generated artifacts from tsup / svelte-package in src/
+src/**/*.d.ts
+src/**/*.d.ts.map
+!src/svelte/shims.d.ts
 src/svelte/theme-css.ts
 
 # IDE
@@ -27,5 +26,3 @@ src/svelte/theme-css.ts
 .claude-plan.md
 CLAUDE.md
 AGENTS.md
-src/utils/dialkit-target.d.ts
-src/utils/dialkit-target.d.ts.map

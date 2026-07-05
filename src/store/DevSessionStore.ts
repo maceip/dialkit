@@ -260,7 +260,7 @@ class DevSessionStoreImpl {
   }
 
   clearExported(): void {
-    this.notes = this.notes.filter((n) => n.status === 'open' && !n.exportedAt);
+    this.notes = this.notes.filter((n) => !n.exportedAt);
     this.changes = this.changes.filter((c) => !c.exportedAt);
     this.cssOverrides = this.cssOverrides.filter((c) => !c.exportedAt);
     this.save();
