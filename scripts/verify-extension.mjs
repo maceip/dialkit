@@ -12,9 +12,13 @@ const required = [
   'popup.js',
   'inject.js',
   'styles.css',
+  'assets/icon-dark.png',
+  'assets/icon-light.png',
   'icons/icon-16.png',
   'icons/icon-48.png',
   'icons/icon-128.png',
+  'icons/icon-dark-128.png',
+  'icons/icon-light-128.png',
 ];
 
 for (const file of required) {

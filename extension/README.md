@@ -14,6 +14,8 @@ npm run verify:extension
 
 This copies `dist/inject/inject.js` and `dist/styles.css` into `extension/`. Both files are required before loading the extension.
 
+Icon masters live in `extension/assets/icon-dark.png` and `icon-light.png`. `npm run build:extension` generates all manifest sizes from those files.
+
 ## Install (unpacked)
 
 1. Open `chrome://extensions`

@@ -23,7 +23,10 @@ export function Landing() {
   return (
     <div className="landing">
       <header className="landing-hero">
-        <p className="landing-eyebrow">DialKit · maceip fork</p>
+        <p className="landing-eyebrow">
+      <img className="landing-logo" src={`${import.meta.env.BASE_URL}icons/icon-light-128.png`} alt="" />
+      DialKit · maceip fork
+    </p>
         <h1>Design in the browser. Ship notes agents can read.</h1>
         <p className="landing-lead">
           DialKit is a live tweaking panel for motion and layout. This fork adds a dev session:

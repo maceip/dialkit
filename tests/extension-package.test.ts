@@ -15,6 +15,8 @@ describe('extension package', () => {
       'inject.js',
       'styles.css',
       'icons/icon-128.png',
+      'icons/icon-dark-128.png',
+      'icons/icon-light-128.png',
     ]) {
       expect(() => accessSync(join(extensionRoot, file))).not.toThrow();
     }
