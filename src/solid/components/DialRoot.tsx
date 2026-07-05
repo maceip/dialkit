@@ -5,6 +5,7 @@ import type { PanelConfig } from '../../store/DialStore';
 import { ShortcutListener } from './ShortcutListener';
 import { Folder } from './Folder';
 import { Panel } from './Panel';
+import { DevSessionNotes } from './DevSessionNotes';
 import {
   blockPanelDragClick,
   getPanelDragHandle,
@@ -34,11 +35,14 @@ interface DialRootProps {
   mode?: DialMode;
   theme?: DialTheme;
   productionEnabled?: boolean;
+  devSession?: boolean | { projectKey?: string };
   onOpenChange?: (open: boolean) => void;
 }
 
 export function DialRoot(props: DialRootProps) {
   if ((props.productionEnabled ?? isDevDefault) === false) return null;
+  const devSessionEnabled = () => Boolean(props.devSession);
+  const projectKey = () => typeof props.devSession === 'object' ? (props.devSession.projectKey ?? 'default') : 'default';
   const [panels, setPanels] = createSignal<PanelConfig[]>([]);
   const [mounted, setMounted] = createSignal(false);
   const [dragOffset, setDragOffset] = createSignal<PanelDragOffset | null>(null);
@@ -191,16 +195,25 @@ export function DialRoot(props: DialRootProps) {
           <Show
             when={panels().length > 1}
             fallback={
-              <For each={panels()}>
-                {(panel) => (
-                  <Panel
-                    panel={panel}
+              <>
+                <For each={panels()}>
+                  {(panel) => (
+                    <Panel
+                      panel={panel}
+                      defaultOpen={inline() || (props.defaultOpen ?? true)}
+                      inline={inline()}
+                      onOpenChange={(open) => handlePanelOpenChange(panel.id, open)}
+                    />
+                  )}
+                </For>
+                <Show when={devSessionEnabled()}>
+                  <DevSessionNotes
+                    projectKey={projectKey()}
                     defaultOpen={inline() || (props.defaultOpen ?? true)}
                     inline={inline()}
-                    onOpenChange={(open) => handlePanelOpenChange(panel.id, open)}
                   />
-                )}
-              </For>
+                </Show>
+              </>
             }
           >
             <div class="dialkit-panel-wrapper">
@@ -221,6 +234,9 @@ export function DialRoot(props: DialRootProps) {
                     />
                   )}
                 </For>
+                <Show when={devSessionEnabled()}>
+                  <DevSessionNotes projectKey={projectKey()} defaultOpen={true} inline={inline()} />
+                </Show>
               </Folder>
             </div>
           </Show>
@@ -230,7 +246,7 @@ export function DialRoot(props: DialRootProps) {
   );
 
   return (
-    <Show when={mounted() && typeof window !== 'undefined' && panels().length > 0}>
+    <Show when={mounted() && typeof window !== 'undefined' && (panels().length > 0 || devSessionEnabled())}>
       <Show when={!inline()} fallback={content()}>
         <Portal mount={document.body}>
           {content()}

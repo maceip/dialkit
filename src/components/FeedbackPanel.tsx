@@ -2,6 +2,8 @@ import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from 
 import { DevSessionStore, type DevNote } from '../store/DevSessionStore';
 import { DialStore } from '../store/DialStore';
 import { inspectElement } from '../utils/dom-inspect';
+import { matchPanelForTarget } from '../dev-session/panel-link';
+import { getDevSessionHost } from '../dev-session/dev-session-host';
 import { Folder } from './Folder';
 
 interface FeedbackPanelProps {
@@ -14,7 +16,6 @@ export function FeedbackPanel({ defaultOpen = true, inline = false }: FeedbackPa
   const [picking, setPicking] = useState(false);
   const [target, setTarget] = useState<Element | null>(null);
   const [hover, setHover] = useState<Element | null>(null);
-  const [panelId, setPanelId] = useState('');
   const [copied, setCopied] = useState(false);
   const [status, setStatus] = useState('');
 
@@ -28,6 +29,12 @@ export function FeedbackPanel({ defaultOpen = true, inline = false }: FeedbackPa
     useCallback(() => DevSessionStore.getPendingChanges().length, [])
   );
 
+  const pendingCss = useSyncExternalStore(
+    useCallback((cb) => DevSessionStore.subscribe(cb), []),
+    useCallback(() => DevSessionStore.getPendingCssOverrides().length, []),
+    useCallback(() => DevSessionStore.getPendingCssOverrides().length, [])
+  );
+
   const panels = useSyncExternalStore(
     useCallback((cb) => DialStore.subscribeGlobal(cb), []),
     useCallback(() => DialStore.getPanels(), []),
@@ -35,13 +42,26 @@ export function FeedbackPanel({ defaultOpen = true, inline = false }: FeedbackPa
   );
 
   const targetInfo = useMemo(() => (target ? inspectElement(target) : null), [target]);
+  const matchedPanel = useMemo(
+    () => matchPanelForTarget(targetInfo, panels),
+    [targetInfo, panels]
+  );
+
+  useEffect(() => {
+    const host = getDevSessionHost();
+    if (!host) return;
+    return host.subscribe(() => {
+      const el = host.getTarget();
+      if (el) setTarget(el);
+    });
+  }, []);
 
   useEffect(() => {
     if (!picking) return;
 
     const onMove = (e: MouseEvent) => {
       const el = document.elementFromPoint(e.clientX, e.clientY);
-      if (!el || el.closest('.dialkit-root')) return;
+      if (!el || el.closest('.dialkit-root, .dialkit-dev-host')) return;
       if (hover !== el) {
         hover?.classList.remove('dialkit-feedback-highlight');
         setHover(el);
@@ -51,16 +71,17 @@ export function FeedbackPanel({ defaultOpen = true, inline = false }: FeedbackPa
 
     const onClick = (e: MouseEvent) => {
       const el = e.target as Element | null;
-      if (!el || el.closest('.dialkit-root')) return;
+      if (!el || el.closest('.dialkit-root, .dialkit-dev-host')) return;
       e.preventDefault();
       e.stopPropagation();
       target?.classList.remove('dialkit-feedback-selected');
       setTarget(el);
+      getDevSessionHost()?.setTarget(el);
       el.classList.add('dialkit-feedback-selected');
       setPicking(false);
       hover?.classList.remove('dialkit-feedback-highlight');
       setHover(null);
-      setStatus('Element tagged.');
+      setStatus('Element tagged. Right-click anywhere for quick notes.');
     };
 
     document.addEventListener('mousemove', onMove, true);
@@ -89,8 +110,6 @@ export function FeedbackPanel({ defaultOpen = true, inline = false }: FeedbackPa
     return () => window.removeEventListener('keydown', onKey, true);
   }, [picking, hover]);
 
-  const selectedPanel = panels.find((p) => p.id === panelId);
-
   const handleSaveNote = () => {
     if (!comment.trim() && !targetInfo) {
       setStatus('Add a comment or tag an element.');
@@ -99,13 +118,14 @@ export function FeedbackPanel({ defaultOpen = true, inline = false }: FeedbackPa
     DevSessionStore.addNote({
       comment,
       target: targetInfo,
-      panelId: selectedPanel?.id,
-      panelName: selectedPanel?.name,
-      dialSnapshot: selectedPanel ? DialStore.getValues(selectedPanel.id) : undefined,
+      panelId: matchedPanel?.id,
+      panelName: matchedPanel?.name,
+      dialSnapshot: matchedPanel ? DialStore.getValues(matchedPanel.id) : undefined,
     });
     setComment('');
     target?.classList.remove('dialkit-feedback-selected');
     setTarget(null);
+    getDevSessionHost()?.setTarget(null);
     setStatus('Note saved locally.');
   };
 
@@ -120,30 +140,24 @@ export function FeedbackPanel({ defaultOpen = true, inline = false }: FeedbackPa
     }
   };
 
+  const openCssEditor = () => {
+    if (target instanceof HTMLElement) {
+      getDevSessionHost()?.openCssInspector(target);
+      setStatus('Style editor opened.');
+    } else {
+      setStatus('Tag an element first.');
+    }
+  };
+
   const openNotes = notes.filter((n) => n.status === 'open');
 
   return (
     <div className="dialkit-panel-wrapper dialkit-feedback-panel">
       <Folder title="Agent notes" defaultOpen={defaultOpen} isRoot={!inline} inline={inline}>
         <div className="dialkit-feedback-meta">
-          {openNotes.length} open note{openNotes.length === 1 ? '' : 's'} · {pendingChanges} pending change{pendingChanges === 1 ? '' : 's'}
+          {openNotes.length} open note{openNotes.length === 1 ? '' : 's'} · {pendingChanges} dial change{pendingChanges === 1 ? '' : 's'} · {pendingCss} CSS edit{pendingCss === 1 ? '' : 's'}
         </div>
-
-        {panels.length > 0 && (
-          <label className="dialkit-feedback-field">
-            <span>Link dial panel</span>
-            <select
-              className="dialkit-feedback-select"
-              value={panelId}
-              onChange={(e) => setPanelId(e.target.value)}
-            >
-              <option value="">(optional)</option>
-              {panels.map((p) => (
-                <option key={p.id} value={p.id}>{p.name}</option>
-              ))}
-            </select>
-          </label>
-        )}
+        <div className="dialkit-feedback-hint">Right-click any element to leave a note or edit styles.</div>
 
         <div className="dialkit-feedback-target">
           {targetInfo ? (
@@ -151,6 +165,7 @@ export function FeedbackPanel({ defaultOpen = true, inline = false }: FeedbackPa
               <strong>Tagged</strong>
               <code>{targetInfo.selector}</code>
               {targetInfo.reactComponent ? <span>{targetInfo.reactComponent}</span> : null}
+              {matchedPanel ? <span>Panel: {matchedPanel.name}</span> : null}
             </>
           ) : (
             <span>Tag a component on the page, then leave a note.</span>
@@ -175,6 +190,9 @@ export function FeedbackPanel({ defaultOpen = true, inline = false }: FeedbackPa
           </button>
           <button type="button" className="dialkit-button" onClick={handleSaveNote}>
             Save note
+          </button>
+          <button type="button" className="dialkit-button" onClick={openCssEditor}>
+            Edit styles
           </button>
           <button type="button" className="dialkit-button dialkit-feedback-btn-accent" onClick={handleCopyReport}>
             {copied ? 'Copied' : 'Copy for agent'}
@@ -217,6 +235,7 @@ function FeedbackNoteRow({ note }: { note: DevNote }) {
         <span>{new Date(note.updatedAt).toLocaleString()}</span>
       </div>
       {note.selector ? <code>{note.selector}</code> : null}
+      {note.panelName ? <span className="dialkit-feedback-note-panel">Panel: {note.panelName}</span> : null}
       <p>{note.comment || '(no comment)'}</p>
       <div className="dialkit-feedback-note-actions">
         <button

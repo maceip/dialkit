@@ -52,14 +52,21 @@
       "svelte": "./dist/svelte/index.js",
       "default": "./dist/svelte/index.js"
     },
-    "./styles.css": "./dist/styles.css"
+    "./styles.css": "./dist/styles.css",
+    "./inject": {
+      "import": {
+        "types": "./dist/inject/inject.d.ts",
+        "default": "./dist/inject/inject.js"
+      }
+    }
   },
   "files": [
     "dist"
   ],
   "scripts": {
     "prepare": "npm run build",
-    "build": "rm -rf dist && tsup && npm run build:svelte",
+    "build": "rm -rf dist && tsup && npm run build:svelte && npm run build:extension",
+    "build:extension": "cp dist/inject/inject.js extension/inject.js && cp dist/styles.css extension/styles.css",
     "build:svelte": "node scripts/gen-theme-css.js && svelte-package -i src/svelte -o dist/svelte && rm -rf .svelte-kit src/store/DialStore.d.ts src/store/DialStore.d.ts.map src/dropdown-position.d.ts src/dropdown-position.d.ts.map src/panel-drag.d.ts src/panel-drag.d.ts.map",
     "dev": "tsup --watch",
     "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.solid.json && tsc --noEmit -p tsconfig.vue.json && node scripts/gen-theme-css.js && svelte-check --tsconfig tsconfig.svelte.json"

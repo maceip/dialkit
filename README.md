@@ -1,4 +1,4 @@
-# dialkit v1.3.0
+# dialkit v1.4.0-dev.1
 
 <img src="https://joshpuckett.me/images/dialkit.png" width="100%" />
 
@@ -859,6 +859,35 @@ import type {
 ```
 
 Return values are fully typed: `params.blur` infers as `number`, `params.color` as `string`, `params.spring` as `SpringConfig`, `params.shadow` as a nested object, etc.
+
+---
+
+## Dev session (agent notes + live CSS editing)
+
+Enable a VisBug-style review layer: right-click any element to leave agent notes, edit CSS inline, and export a markdown report.
+
+```tsx
+<DialRoot devSession={{ projectKey: 'my-app' }} />
+```
+
+Or use persisted dev panels:
+
+```tsx
+const params = useDevDialKit('Card', {
+  blur: [24, 0, 100],
+  color: '#ff5500',
+}, { componentName: 'Card' });
+```
+
+**Right-click menu:** Leave note · Edit styles · Tag element
+
+**Auto-linking:** Notes match the nearest React/Vue/Svelte component stack to a dial panel by name.
+
+**Copy for agent:** Exports notes, CSS overrides, dial parameter changes, and current values as markdown.
+
+**Without app instrumentation:** Load `?dialkit-dev=1` or install the `extension/` Chrome extension (build with `npm run build:extension`).
+
+Works in React, Solid, Svelte, and Vue via the `devSession` prop on `DialRoot`.
 
 ---
 

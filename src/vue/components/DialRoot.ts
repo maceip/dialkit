@@ -3,6 +3,7 @@ import { DialStore } from '../../store/DialStore';
 import type { PanelConfig } from '../../store/DialStore';
 import { Folder } from './Folder';
 import { Panel } from './Panel';
+import { DevSessionNotes } from './DevSessionNotes';
 import { ShortcutListener } from './ShortcutListener';
 import {
   blockPanelDragClick,
@@ -49,6 +50,10 @@ export const DialRoot = defineComponent({
     productionEnabled: {
       type: Boolean,
       default: isDevDefault,
+    },
+    devSession: {
+      type: [Boolean, Object] as unknown as () => boolean | { projectKey?: string },
+      default: false,
     },
   },
   emits: ['openChange'],
@@ -174,6 +179,10 @@ export const DialRoot = defineComponent({
       }
       : undefined;
     const originX = computed(() => props.mode === 'inline' ? undefined : getPanelOriginX(activePosition.value, dragOffset.value));
+    const devSessionEnabled = computed(() => Boolean(props.devSession));
+    const projectKey = computed(() => typeof props.devSession === 'object' && props.devSession
+      ? (props.devSession.projectKey ?? 'default')
+      : 'default');
 
     onMounted(() => {
       mounted.value = true;
@@ -219,27 +228,43 @@ export const DialRoot = defineComponent({
                 onOpenChange: handleRootOpenChange,
                 panelHeightOffset: 2,
               }, {
-                default: () => panels.value.map((panel) => h(Panel, {
-                  key: panel.id,
-                  panel,
-                  defaultOpen: true,
-                  variant: 'section',
-                })),
+                default: () => [
+                  ...panels.value.map((panel) => h(Panel, {
+                    key: panel.id,
+                    panel,
+                    defaultOpen: true,
+                    variant: 'section',
+                  })),
+                  devSessionEnabled.value ? h(DevSessionNotes, {
+                    key: 'dev-session',
+                    projectKey: projectKey.value,
+                    defaultOpen: true,
+                    inline: props.mode === 'inline',
+                  }) : null,
+                ],
               }),
             ]),
           ]
-          : panels.value.map((panel) => h(Panel, {
-            key: panel.id,
-            panel,
-            defaultOpen: props.mode === 'inline' || props.defaultOpen,
-            inline: props.mode === 'inline',
-            onOpenChange: (open: boolean) => handlePanelOpenChange(panel.id, open),
-          }))),
+          : [
+            ...panels.value.map((panel) => h(Panel, {
+              key: panel.id,
+              panel,
+              defaultOpen: props.mode === 'inline' || props.defaultOpen,
+              inline: props.mode === 'inline',
+              onOpenChange: (open: boolean) => handlePanelOpenChange(panel.id, open),
+            })),
+            devSessionEnabled.value ? h(DevSessionNotes, {
+              key: 'dev-session',
+              projectKey: projectKey.value,
+              defaultOpen: props.mode === 'inline' || props.defaultOpen,
+              inline: props.mode === 'inline',
+            }) : null,
+          ]),
       ]),
     });
 
     return () => {
-      if (!props.productionEnabled || !mounted.value || typeof window === 'undefined' || panels.value.length === 0) {
+      if (!props.productionEnabled || !mounted.value || typeof window === 'undefined' || (panels.value.length === 0 && !devSessionEnabled.value)) {
         return null;
       }
 

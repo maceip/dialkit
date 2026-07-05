@@ -4,6 +4,7 @@
   import { themeCSS } from '../theme-css';
   import Portal from '../Portal.svelte';
   import Folder from './Folder.svelte';
+  import DevSessionNotes from './DevSessionNotes.svelte';
   import Panel from './Panel.svelte';
   import ShortcutListener from './ShortcutListener.svelte';
   import {
@@ -29,14 +30,18 @@
       ? viteMode !== 'production'
       : true;
 
-  let { position = 'top-right', defaultOpen = true, mode = 'popover', theme = 'system' as DialTheme, productionEnabled = isDevDefault, onOpenChange } = $props<{
+  let { position = 'top-right', defaultOpen = true, mode = 'popover', theme = 'system' as DialTheme, productionEnabled = isDevDefault, devSession = false, onOpenChange } = $props<{
     position?: DialPosition;
     defaultOpen?: boolean;
     mode?: DialMode;
     theme?: DialTheme;
     productionEnabled?: boolean;
+    devSession?: boolean | { projectKey?: string };
     onOpenChange?: (open: boolean) => void;
   }>();
+
+  const devSessionEnabled = $derived(Boolean(devSession));
+  const projectKey = $derived(typeof devSession === 'object' ? (devSession.projectKey ?? 'default') : 'default');
 
   const inline = $derived(mode === 'inline');
 
@@ -183,7 +188,7 @@
 
 </script>
 
-{#if productionEnabled && mounted && panels.length > 0}
+{#if productionEnabled && mounted && (panels.length > 0 || devSessionEnabled)}
   {#snippet content()}
     <ShortcutListener>
       <div class="dialkit-root" data-mode={mode} data-theme={theme}>
@@ -217,6 +222,9 @@
                     variant="section"
                   />
                 {/each}
+                {#if devSessionEnabled}
+                  <DevSessionNotes {projectKey} defaultOpen={true} {inline} />
+                {/if}
               </Folder>
             </div>
           {:else}
@@ -228,6 +236,9 @@
                 onOpenChange={(open) => handlePanelOpenChange(panel.id, open)}
               />
             {/each}
+            {#if devSessionEnabled}
+              <DevSessionNotes {projectKey} defaultOpen={inline || defaultOpen} {inline} />
+            {/if}
           {/if}
         </div>
       </div>

@@ -1,10 +1,12 @@
 // Core API
 export { createDialKit, createDialKitController } from './createDialKit.svelte.js';
 export type { CreateDialOptions, DialKitController, DialKitValues } from './createDialKit.svelte.js';
+export { createDevDialKit, createDevDialKitController } from './createDevDialKit.svelte.js';
 
 // Root component
 export { default as DialRoot } from './components/DialRoot.svelte';
 export type { DialPosition, DialMode, DialTheme } from './components/DialRoot.svelte';
+export { default as DevSessionNotes } from './components/DevSessionNotes.svelte';
 
 // Shortcut components
 export { default as ShortcutListener } from './components/ShortcutListener.svelte';

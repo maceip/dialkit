@@ -104,6 +104,7 @@ export type ControlMeta = {
 export type PanelConfig = {
   id: string;
   name: string;
+  componentName?: string;
   controls: ControlMeta[];
   values: Record<string, DialValue>;
   shortcuts: Record<string, ShortcutConfig>;
@@ -134,6 +135,7 @@ export type DialKitPersistOptions = boolean | {
 export type DialStorePanelOptions = {
   retainOnUnmount?: boolean;
   persist?: DialKitPersistOptions;
+  componentName?: string;
 };
 
 type PersistConfig = {
@@ -323,7 +325,14 @@ class DialStoreClass {
     const previousBaseValues = this.baseValues.get(id) ?? persisted?.baseValues ?? persisted?.values ?? {};
     const baseValues = this.reconcileValues(defaultValues, previousBaseValues, controlsByPath);
 
-    this.panels.set(id, { id, name, controls, values, shortcuts: shortcuts ?? {} });
+    this.panels.set(id, {
+      id,
+      name,
+      componentName: options.componentName ?? this.panels.get(id)?.componentName,
+      controls,
+      values,
+      shortcuts: shortcuts ?? {},
+    });
     this.snapshots.set(id, { ...values });
     this.baseValues.set(id, baseValues);
     this.defaultValues.set(id, { ...defaultValues });
@@ -355,7 +364,14 @@ class DialStoreClass {
     this.initTransitionModes(config, '', defaultValues);
     const nextValues = this.reconcileValues(defaultValues, existing.values, controlsByPath);
 
-    const nextPanel: PanelConfig = { id, name, controls, values: nextValues, shortcuts: shortcuts ?? existing.shortcuts };
+    const nextPanel: PanelConfig = {
+      id,
+      name,
+      componentName: options.componentName ?? existing.componentName,
+      controls,
+      values: nextValues,
+      shortcuts: shortcuts ?? existing.shortcuts,
+    };
     this.panels.set(id, nextPanel);
     this.snapshots.set(id, { ...nextValues });
 

@@ -5,6 +5,7 @@ export interface ElementInfo {
   element: string;
   reactComponent: string | null;
   reactStack: string[];
+  framework?: 'react' | 'vue' | 'svelte' | 'solid' | null;
   rect: { x: number; y: number; width: number; height: number };
 }
 
@@ -21,6 +22,20 @@ function getReactFiber(el: Element | null): any {
     if (k.indexOf('__reactFiber$') === 0 || k.indexOf('__reactInternalInstance$') === 0) {
       return (el as any)[k];
     }
+  }
+  return null;
+}
+
+function getVueComponent(el: Element | null): any {
+  if (!el || el.nodeType !== 1) return null;
+  return (el as any).__vueParentComponent ?? (el as any).__vue__ ?? null;
+}
+
+function getSvelteComponent(el: Element | null): any {
+  if (!el || el.nodeType !== 1) return null;
+  const keys = Object.keys(el);
+  for (const k of keys) {
+    if (k.startsWith('__svelte')) return (el as any)[k];
   }
   return null;
 }
@@ -57,6 +72,41 @@ function fiberStack(fiber: any): string[] {
     depth++;
   }
   return names.reverse();
+}
+
+function vueStack(component: any): string[] {
+  const names: string[] = [];
+  let cur = component;
+  let depth = 0;
+  while (cur && depth < 12) {
+    const name = cur.type?.name || cur.type?.__name || cur.type?.displayName;
+    if (name && names[names.length - 1] !== name) names.push(name);
+    cur = cur.parent;
+    depth++;
+  }
+  return names.reverse();
+}
+
+function svelteStack(component: any): string[] {
+  const names: string[] = [];
+  if (component?.function?.name) names.push(component.function.name);
+  return names;
+}
+
+function detectComponentStack(el: Element): { stack: string[]; framework: ElementInfo['framework'] } {
+  const fiber = getReactFiber(el);
+  if (fiber) {
+    return { stack: fiberStack(fiber), framework: 'react' };
+  }
+  const vue = getVueComponent(el);
+  if (vue) {
+    return { stack: vueStack(vue), framework: 'vue' };
+  }
+  const svelte = getSvelteComponent(el);
+  if (svelte) {
+    return { stack: svelteStack(svelte), framework: 'svelte' };
+  }
+  return { stack: [], framework: null };
 }
 
 export function cssPath(el: Element | null): string {
@@ -100,8 +150,7 @@ function elementLabel(el: Element): string {
 
 export function inspectElement(el: Element | null): ElementInfo | null {
   if (!el || el.nodeType !== 1) return null;
-  const fiber = getReactFiber(el);
-  const stack = fiber ? fiberStack(fiber) : [];
+  const { stack, framework } = detectComponentStack(el);
   const r = el.getBoundingClientRect();
   return {
     url: location.href,
@@ -110,6 +159,7 @@ export function inspectElement(el: Element | null): ElementInfo | null {
     element: elementLabel(el),
     reactComponent: stack.length ? stack[stack.length - 1] : null,
     reactStack: stack,
+    framework,
     rect: {
       x: Math.round(r.x),
       y: Math.round(r.y),

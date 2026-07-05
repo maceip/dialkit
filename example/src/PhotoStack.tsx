@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { useDialKit } from 'dialkit';
+import { useDevDialKit } from 'dialkit';
 
 const PHOTOS = [
   { id: 1, src: '/photos/one.avif', color: '#c41e3a' },
@@ -17,7 +17,7 @@ export function PhotoStack() {
     setStep((s) => s + 1);
   };
 
-  const params = useDialKit('Photo Stack', {
+  const params = useDevDialKit('Photo Stack', {
     title: 'Japan',
     subtitle: { type: 'text' as const, default: 'December 2025', placeholder: 'Enter subtitle...' },
     shadowTint: '#000000',

@@ -12,6 +12,7 @@ import type {
 export interface UseDialOptions {
   id?: string;
   persist?: DialKitPersistOptions;
+  componentName?: string;
   onAction?: (action: string) => void;
   shortcuts?: Record<string, ShortcutConfig>;
 }
@@ -49,14 +50,18 @@ export function useDialKitController<T extends DialConfig>(
   shortcutsRef.current = options?.shortcuts;
   const persistRef = useRef(options?.persist);
   persistRef.current = options?.persist;
+  const componentNameRef = useRef(options?.componentName);
+  componentNameRef.current = options?.componentName;
   const serializedShortcuts = JSON.stringify(options?.shortcuts);
   const serializedPersist = JSON.stringify(options?.persist);
+  const serializedComponentName = options?.componentName ?? '';
 
   // Register panel on mount
   useEffect(() => {
     DialStore.registerPanel(panelId, name, configRef.current, shortcutsRef.current, {
       retainOnUnmount: hasStableId,
       persist: persistRef.current,
+      componentName: componentNameRef.current,
     });
     return () => DialStore.unregisterPanel(panelId);
   }, [hasStableId, panelId, name]);
@@ -71,9 +76,10 @@ export function useDialKitController<T extends DialConfig>(
     DialStore.updatePanel(panelId, name, configRef.current, shortcutsRef.current, {
       retainOnUnmount: hasStableId,
       persist: persistRef.current,
+      componentName: componentNameRef.current,
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [hasStableId, panelId, name, serializedConfig, serializedShortcuts, serializedPersist]);
+  }, [hasStableId, panelId, name, serializedConfig, serializedShortcuts, serializedPersist, serializedComponentName]);
 
   // Subscribe to action events
   useEffect(() => {

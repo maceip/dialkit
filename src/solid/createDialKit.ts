@@ -12,6 +12,7 @@ import type {
 export interface CreateDialOptions {
   id?: string;
   persist?: DialKitPersistOptions;
+  componentName?: string;
   onAction?: (action: string) => void;
   shortcuts?: Record<string, ShortcutConfig>;
 }
@@ -49,6 +50,7 @@ export function createDialKitController<T extends DialConfig>(
     DialStore.registerPanel(panelId, name, config, options?.shortcuts, {
       retainOnUnmount: hasStableId,
       persist: options?.persist,
+      componentName: options?.componentName,
     });
     setFlatValues(DialStore.getValues(panelId));
 

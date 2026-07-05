@@ -1,6 +1,7 @@
 import type { ControlMeta, DialValue } from './DialStore';
 import { DialStore } from './DialStore';
 import type { ElementInfo } from '../utils/dom-inspect';
+import { matchPanelForTarget } from '../dev-session/panel-link';
 
 export interface DevNote {
   id: string;
@@ -20,6 +21,18 @@ export interface DevNote {
   exportedAt?: string | null;
 }
 
+export interface CssOverrideEntry {
+  id: string;
+  at: string;
+  selector: string;
+  element: string;
+  property: string;
+  value: string;
+  previousValue: string;
+  reactComponent?: string | null;
+  exportedAt?: string | null;
+}
+
 export interface DialChangeEntry {
   id: string;
   at: string;
@@ -36,6 +49,7 @@ interface DevSessionState {
   projectKey: string;
   notes: DevNote[];
   changes: DialChangeEntry[];
+  cssOverrides?: CssOverrideEntry[];
 }
 
 type Listener = () => void;
@@ -55,8 +69,10 @@ class DevSessionStoreImpl {
   private enabled = false;
   private notes: DevNote[] = [];
   private changes: DialChangeEntry[] = [];
+  private cssOverrides: CssOverrideEntry[] = [];
   private notesSnapshot: DevNote[] = [];
   private pendingChangesSnapshot: DialChangeEntry[] = [];
+  private pendingCssSnapshot: CssOverrideEntry[] = [];
   private listeners = new Set<Listener>();
   private unsubscribeDial: (() => void) | null = null;
 
@@ -121,6 +137,14 @@ class DevSessionStoreImpl {
     return this.pendingChangesSnapshot;
   }
 
+  getCssOverrides(): CssOverrideEntry[] {
+    return [...this.cssOverrides].sort((a, b) => b.at.localeCompare(a.at));
+  }
+
+  getPendingCssOverrides(): CssOverrideEntry[] {
+    return this.pendingCssSnapshot;
+  }
+
   addNote(input: {
     comment: string;
     target?: ElementInfo | null;
@@ -129,6 +153,12 @@ class DevSessionStoreImpl {
     dialSnapshot?: Record<string, DialValue>;
   }): DevNote {
     const now = new Date().toISOString();
+    const panels = DialStore.getPanels();
+    const matched = !input.panelId && input.target
+      ? matchPanelForTarget(input.target, panels)
+      : null;
+    const panelId = input.panelId ?? matched?.id;
+    const panelName = input.panelName ?? matched?.name;
     const note: DevNote = {
       id: uid(),
       createdAt: now,
@@ -141,9 +171,9 @@ class DevSessionStoreImpl {
       element: input.target?.element,
       reactComponent: input.target?.reactComponent ?? null,
       reactStack: input.target?.reactStack,
-      panelId: input.panelId,
-      panelName: input.panelName,
-      dialSnapshot: input.dialSnapshot,
+      panelId,
+      panelName,
+      dialSnapshot: input.dialSnapshot ?? (panelId ? DialStore.getValues(panelId) : undefined),
       exportedAt: null,
     };
     this.notes.unshift(note);
@@ -168,9 +198,36 @@ class DevSessionStoreImpl {
     this.notify();
   }
 
+  logCssOverride(input: {
+    selector: string;
+    element: string;
+    property: string;
+    value: string;
+    previousValue: string;
+    target?: ElementInfo | null;
+  }): CssOverrideEntry {
+    const entry: CssOverrideEntry = {
+      id: uid(),
+      at: new Date().toISOString(),
+      selector: input.selector,
+      element: input.element,
+      property: input.property,
+      value: input.value,
+      previousValue: input.previousValue,
+      reactComponent: input.target?.reactComponent ?? null,
+      exportedAt: null,
+    };
+    this.cssOverrides.unshift(entry);
+    if (this.cssOverrides.length > 500) this.cssOverrides.length = 500;
+    this.save();
+    this.notify();
+    return entry;
+  }
+
   clearExported(): void {
     this.notes = this.notes.filter((n) => n.status === 'open' && !n.exportedAt);
     this.changes = this.changes.filter((c) => !c.exportedAt);
+    this.cssOverrides = this.cssOverrides.filter((c) => !c.exportedAt);
     this.save();
     this.notify();
   }
@@ -178,6 +235,7 @@ class DevSessionStoreImpl {
   resetSession(): void {
     this.notes = [];
     this.changes = [];
+    this.cssOverrides = [];
     this.save();
     this.notify();
   }
@@ -186,6 +244,7 @@ class DevSessionStoreImpl {
     const includeDone = options?.includeDoneNotes ?? false;
     const notes = this.getNotes().filter((n) => !n.exportedAt && (includeDone || n.status === 'open'));
     const changes = this.getPendingChanges();
+    const cssOverrides = this.getPendingCssOverrides();
     const panels = DialStore.getPanels();
 
     const lines: string[] = ['# DialKit dev session', ''];
@@ -207,6 +266,26 @@ class DevSessionStoreImpl {
         if (note.panelName) lines.push(`- **Dial panel:** ${note.panelName}`);
         lines.push('');
         lines.push(note.comment || '(no comment)');
+        lines.push('');
+      }
+    }
+
+    if (cssOverrides.length) {
+      lines.push('## CSS overrides');
+      lines.push('');
+      const bySelector = new Map<string, CssOverrideEntry[]>();
+      for (const override of cssOverrides) {
+        const list = bySelector.get(override.selector) ?? [];
+        list.push(override);
+        bySelector.set(override.selector, list);
+      }
+      for (const [selector, overrides] of bySelector) {
+        lines.push(`### \`${selector}\``);
+        const latestByProperty = new Map<string, CssOverrideEntry>();
+        for (const o of overrides) latestByProperty.set(o.property, o);
+        for (const o of latestByProperty.values()) {
+          lines.push(`- **${o.property}:** \`${o.value}\` (was \`${o.previousValue || 'unset'}\`)`);
+        }
         lines.push('');
       }
     }
@@ -244,8 +323,8 @@ class DevSessionStoreImpl {
       }
     }
 
-    if (!notes.length && !changes.length) {
-      lines.push('_No pending notes or parameter changes._');
+    if (!notes.length && !changes.length && !cssOverrides.length) {
+      lines.push('_No pending notes, CSS overrides, or parameter changes._');
     }
 
     return lines.join('\n');
@@ -268,6 +347,9 @@ class DevSessionStoreImpl {
     }
     for (const change of this.changes) {
       if (!change.exportedAt) change.exportedAt = now;
+    }
+    for (const override of this.cssOverrides) {
+      if (!override.exportedAt) override.exportedAt = now;
     }
     this.save();
     this.notify();
@@ -303,6 +385,7 @@ class DevSessionStoreImpl {
     if (!storage) {
       this.notes = [];
       this.changes = [];
+      this.cssOverrides = [];
       this.rebuildSnapshots();
       return;
     }
@@ -311,6 +394,7 @@ class DevSessionStoreImpl {
       if (!raw) {
         this.notes = [];
         this.changes = [];
+        this.cssOverrides = [];
         this.rebuildSnapshots();
         return;
       }
@@ -318,14 +402,17 @@ class DevSessionStoreImpl {
       if (parsed?.version !== STORAGE_VERSION) {
         this.notes = [];
         this.changes = [];
+        this.cssOverrides = [];
         this.rebuildSnapshots();
         return;
       }
       this.notes = Array.isArray(parsed.notes) ? parsed.notes : [];
       this.changes = Array.isArray(parsed.changes) ? parsed.changes : [];
+      this.cssOverrides = Array.isArray(parsed.cssOverrides) ? parsed.cssOverrides : [];
     } catch {
       this.notes = [];
       this.changes = [];
+      this.cssOverrides = [];
     }
     this.rebuildSnapshots();
   }
@@ -338,6 +425,7 @@ class DevSessionStoreImpl {
       projectKey: this.projectKey,
       notes: this.notes,
       changes: this.changes,
+      cssOverrides: this.cssOverrides,
     };
     try {
       storage.setItem(storageKey(this.projectKey), JSON.stringify(state));
@@ -363,6 +451,9 @@ class DevSessionStoreImpl {
   private rebuildSnapshots(): void {
     this.notesSnapshot = [...this.notes].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
     this.pendingChangesSnapshot = [...this.changes]
+      .filter((c) => !c.exportedAt)
+      .sort((a, b) => b.at.localeCompare(a.at));
+    this.pendingCssSnapshot = [...this.cssOverrides]
       .filter((c) => !c.exportedAt)
       .sort((a, b) => b.at.localeCompare(a.at));
   }

@@ -78,4 +78,14 @@ export default defineConfig([
     external: ['vue', 'motion-v'],
     tsconfig: 'tsconfig.vue.json',
   },
+  // Inject / extension standalone bundle
+  {
+    entry: { inject: 'src/inject/standalone.ts' },
+    outDir: 'dist/inject',
+    format: ['esm'],
+    dts: true,
+    splitting: false,
+    sourcemap: true,
+    platform: 'browser',
+  },
 ]);

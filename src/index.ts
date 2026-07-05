@@ -10,9 +10,14 @@ export { FeedbackPanel } from './components/FeedbackPanel';
 
 // Dev session (notes + change queue for agents)
 export { DevSessionStore } from './store/DevSessionStore';
-export type { DevNote, DialChangeEntry } from './store/DevSessionStore';
+export type { DevNote, DialChangeEntry, CssOverrideEntry } from './store/DevSessionStore';
 export { inspectElement, cssPath } from './utils/dom-inspect';
 export type { ElementInfo } from './utils/dom-inspect';
+export { mountDevSessionHost, getDevSessionHost } from './dev-session/dev-session-host';
+export { bootstrapDevSession } from './dev-session/bootstrap';
+export { mountAgentNotesPanel } from './dev-session/feedback-mount';
+export { matchPanelForTarget } from './dev-session/panel-link';
+export { CSS_INSPECTOR_PROPERTIES, applyCssOverride, readCssValues } from './dev-session/css-inspector';
 
 // Individual components (for advanced usage)
 export { Slider } from './components/Slider';
