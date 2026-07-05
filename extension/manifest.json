@@ -3,11 +3,14 @@
   "name": "DialKit Dev Session",
   "version": "1.4.0",
   "description": "Leave agent notes and edit page styles on any site without app instrumentation.",
-  "permissions": ["storage", "activeTab"],
+  "permissions": ["storage", "activeTab", "tabs"],
   "host_permissions": ["<all_urls>"],
   "action": {
     "default_title": "Toggle DialKit Dev Session",
     "default_popup": "popup.html"
+  },
+  "background": {
+    "service_worker": "background.js"
   },
   "content_scripts": [
     {

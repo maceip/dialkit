@@ -27,3 +27,5 @@ src/svelte/theme-css.ts
 .claude-plan.md
 CLAUDE.md
 AGENTS.md
+src/utils/dialkit-target.d.ts
+src/utils/dialkit-target.d.ts.map

@@ -3,6 +3,16 @@ import { DialStore } from './DialStore';
 import type { ElementInfo } from '../utils/dom-inspect';
 import { matchPanelForTarget } from '../dev-session/panel-link';
 
+import { buildCssPatch } from '../dev-session/css-patch';
+import type { DialKitSourceMeta } from '../utils/dialkit-target';
+
+export interface NoteReply {
+  id: string;
+  at: string;
+  author?: string;
+  body: string;
+}
+
 export interface DevNote {
   id: string;
   createdAt: string;
@@ -15,6 +25,10 @@ export interface DevNote {
   element?: string;
   reactComponent?: string | null;
   reactStack?: string[];
+  dialkitId?: string;
+  source?: DialKitSourceMeta;
+  screenshotDataUrl?: string | null;
+  replies?: NoteReply[];
   panelId?: string;
   panelName?: string;
   dialSnapshot?: Record<string, DialValue>;
@@ -45,7 +59,7 @@ export interface DialChangeEntry {
 }
 
 interface DevSessionState {
-  version: 1;
+  version: 2;
   projectKey: string;
   notes: DevNote[];
   changes: DialChangeEntry[];
@@ -54,7 +68,7 @@ interface DevSessionState {
 
 type Listener = () => void;
 
-const STORAGE_VERSION = 1;
+const STORAGE_VERSION = 2;
 
 function uid(): string {
   return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
@@ -151,6 +165,7 @@ class DevSessionStoreImpl {
     panelId?: string;
     panelName?: string;
     dialSnapshot?: Record<string, DialValue>;
+    screenshotDataUrl?: string | null;
   }): DevNote {
     const now = new Date().toISOString();
     const panels = DialStore.getPanels();
@@ -171,6 +186,10 @@ class DevSessionStoreImpl {
       element: input.target?.element,
       reactComponent: input.target?.reactComponent ?? null,
       reactStack: input.target?.reactStack,
+      dialkitId: input.target?.dialkitId,
+      source: input.target?.source,
+      screenshotDataUrl: input.screenshotDataUrl ?? null,
+      replies: [],
       panelId,
       panelName,
       dialSnapshot: input.dialSnapshot ?? (panelId ? DialStore.getValues(panelId) : undefined),
@@ -188,6 +207,22 @@ class DevSessionStoreImpl {
     if (patch.comment !== undefined) note.comment = patch.comment.trim();
     if (patch.status !== undefined) note.status = patch.status;
     note.updatedAt = new Date().toISOString();
+    this.save();
+    this.notify();
+  }
+
+  addReply(noteId: string, body: string, author?: string): void {
+    const note = this.notes.find((n) => n.id === noteId);
+    if (!note || !body.trim()) return;
+    const reply: NoteReply = {
+      id: uid(),
+      at: new Date().toISOString(),
+      author,
+      body: body.trim(),
+    };
+    note.replies = note.replies ?? [];
+    note.replies.push(reply);
+    note.updatedAt = reply.at;
     this.save();
     this.notify();
   }
@@ -240,6 +275,44 @@ class DevSessionStoreImpl {
     this.notify();
   }
 
+  exportJson(): string {
+    const state: DevSessionState = {
+      version: STORAGE_VERSION,
+      projectKey: this.projectKey,
+      notes: this.notes,
+      changes: this.changes,
+      cssOverrides: this.cssOverrides,
+    };
+    return JSON.stringify(state, null, 2);
+  }
+
+  importJson(raw: string, merge = true): void {
+    const parsed = JSON.parse(raw) as { version?: number; notes?: DevNote[]; changes?: DialChangeEntry[]; cssOverrides?: CssOverrideEntry[] };
+    if (!parsed || (parsed.version !== 1 && parsed.version !== 2)) {
+      throw new Error('Invalid dev session export');
+    }
+    if (merge) {
+      this.notes = [...(parsed.notes ?? []), ...this.notes];
+      this.changes = [...(parsed.changes ?? []), ...this.changes];
+      this.cssOverrides = [...(parsed.cssOverrides ?? []), ...this.cssOverrides];
+    } else {
+      this.notes = parsed.notes ?? [];
+      this.changes = parsed.changes ?? [];
+      this.cssOverrides = parsed.cssOverrides ?? [];
+    }
+    this.save();
+    this.notify();
+  }
+
+  async copyJsonExport(): Promise<boolean> {
+    const json = this.exportJson();
+    if (typeof navigator !== 'undefined' && navigator.clipboard?.writeText) {
+      await navigator.clipboard.writeText(json);
+      return true;
+    }
+    return false;
+  }
+
   buildAgentReport(options?: { includeDoneNotes?: boolean }): string {
     const includeDone = options?.includeDoneNotes ?? false;
     const notes = this.getNotes().filter((n) => !n.exportedAt && (includeDone || n.status === 'open'));
@@ -259,15 +332,42 @@ class DevSessionStoreImpl {
       for (const note of notes) {
         lines.push(`### ${note.reactComponent ?? note.element ?? 'UI note'} (${note.status})`);
         if (note.selector) lines.push(`- **Selector:** \`${note.selector}\``);
-        if (note.reactComponent) lines.push(`- **React:** \`${note.reactComponent}\``);
+        if (note.dialkitId) lines.push(`- **DialKit ID:** \`${note.dialkitId}\``);
+        if (note.source?.file) {
+          const loc = [note.source.file, note.source.line, note.source.column].filter((v) => v !== undefined).join(':');
+          lines.push(`- **Source:** \`${loc}\``);
+        }
+        if (note.reactComponent) lines.push(`- **Component:** \`${note.reactComponent}\``);
         if (note.reactStack?.length) {
           lines.push(`- **Stack:** ${note.reactStack.map((n) => `\`${n}\``).join(' → ')}`);
         }
         if (note.panelName) lines.push(`- **Dial panel:** ${note.panelName}`);
+        if (note.screenshotDataUrl) lines.push(`- **Screenshot:** (embedded below)`);
         lines.push('');
         lines.push(note.comment || '(no comment)');
+        if (note.replies?.length) {
+          lines.push('');
+          lines.push('**Replies:**');
+          for (const reply of note.replies) {
+            lines.push(`- ${reply.author ? `**${reply.author}:** ` : ''}${reply.body}`);
+          }
+        }
+        if (note.screenshotDataUrl) {
+          lines.push('');
+          lines.push(`![screenshot](${note.screenshotDataUrl})`);
+        }
         lines.push('');
       }
+    }
+
+    const cssPatch = buildCssPatch(cssOverrides);
+    if (cssPatch.trim()) {
+      lines.push('## CSS patch');
+      lines.push('');
+      lines.push('```css');
+      lines.push(cssPatch.trimEnd());
+      lines.push('```');
+      lines.push('');
     }
 
     if (cssOverrides.length) {
@@ -398,15 +498,15 @@ class DevSessionStoreImpl {
         this.rebuildSnapshots();
         return;
       }
-      const parsed = JSON.parse(raw) as DevSessionState;
-      if (parsed?.version !== STORAGE_VERSION) {
+      const parsed = JSON.parse(raw) as { version?: number; notes?: DevNote[]; changes?: DialChangeEntry[]; cssOverrides?: CssOverrideEntry[]; projectKey?: string };
+      if (parsed?.version !== STORAGE_VERSION && parsed?.version !== 1) {
         this.notes = [];
         this.changes = [];
         this.cssOverrides = [];
         this.rebuildSnapshots();
         return;
       }
-      this.notes = Array.isArray(parsed.notes) ? parsed.notes : [];
+      this.notes = Array.isArray(parsed.notes) ? parsed.notes.map((n) => ({ replies: [], ...n })) : [];
       this.changes = Array.isArray(parsed.changes) ? parsed.changes : [];
       this.cssOverrides = Array.isArray(parsed.cssOverrides) ? parsed.cssOverrides : [];
     } catch {

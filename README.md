@@ -864,30 +864,34 @@ Return values are fully typed: `params.blur` infers as `number`, `params.color` 
 
 ## Dev session (agent notes + live CSS editing)
 
-Enable a VisBug-style review layer: right-click any element to leave agent notes, edit CSS inline, and export a markdown report.
+Enable a VisBug-style review layer: right-click any element to leave agent notes, edit CSS inline, open dynamic dial panels, and export markdown/JSON for agents.
 
 ```tsx
 <DialRoot devSession={{ projectKey: 'my-app' }} />
 ```
 
-Or use persisted dev panels:
-
 ```tsx
-const params = useDevDialKit('Card', {
-  blur: [24, 0, 100],
-  color: '#ff5500',
-}, { componentName: 'Card' });
+import { useDevDialKit, dialkitTarget } from 'dialkit';
+
+function Card() {
+  const params = useDevDialKit('Card', { radius: [16, 0, 64] }, {
+    componentName: 'Card',
+    source: { file: 'src/Card.tsx', line: 10 },
+  });
+
+  return <div {...dialkitTarget({ id: 'card-root', source: { file: 'src/Card.tsx', line: 12 } })} />;
+}
 ```
 
-**Right-click menu:** Leave note · Edit styles · Tag element
+**Right-click menu:** notes · styles · dial panel · measure · move · align
 
-**Auto-linking:** Notes match the nearest React/Vue/Svelte component stack to a dial panel by name.
+**Dynamic dial panels:** picked elements get a full DialKit panel (sliders/colors) wired to live CSS.
 
-**Copy for agent:** Exports notes, CSS overrides, dial parameter changes, and current values as markdown.
+**Exports:** markdown agent report (with CSS patch + optional screenshot) and JSON session sync.
 
-**Without app instrumentation:** Load `?dialkit-dev=1` or install the `extension/` Chrome extension (build with `npm run build:extension`).
+**Extension:** loads full `DialRoot` + dev session on any page after `npm run build:extension` and loading `extension/` unpacked in Chrome.
 
-Works in React, Solid, Svelte, and Vue via the `devSession` prop on `DialRoot`.
+**Query param:** `?dialkit-dev=1&dialkit-project=my-app`
 
 ---
 

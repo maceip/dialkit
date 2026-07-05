@@ -1723,3 +1723,43 @@
   padding: 4px 6px;
   font-size: 11px;
 }
+
+.dialkit-dev-css-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-bottom: 8px;
+}
+
+.dialkit-dev-css-toolbar button {
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: rgba(255, 255, 255, 0.06);
+  color: inherit;
+  border-radius: 6px;
+  padding: 4px 8px;
+  font-size: 10px;
+  cursor: pointer;
+}
+
+.dialkit-dev-measure {
+  position: fixed;
+  pointer-events: none;
+  z-index: 2147483645;
+  outline: 1px dashed #2563eb;
+  background: rgba(37, 99, 235, 0.08);
+  color: #fff;
+  font-size: 10px;
+  font-family: ui-monospace, monospace;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 4px;
+}
+
+.dialkit-feedback-reply {
+  margin: 4px 0 0 8px;
+  padding-left: 8px;
+  border-left: 2px solid var(--dial-border);
+  font-size: 10px;
+  color: var(--dial-text-secondary);
+}

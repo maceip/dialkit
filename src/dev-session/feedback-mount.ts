@@ -11,7 +11,7 @@ export function mountAgentNotesPanel(container: HTMLElement): () => void {
   let comment = '';
 
   const root = document.createElement('div');
-  root.className = 'dialkit-panel-wrapper dialkit-feedback-panel';
+  root.className = 'dialkit-feedback-inner';
   root.innerHTML = `
     <div class="dialkit-feedback-meta" data-meta></div>
     <div class="dialkit-feedback-hint">Right-click any element to leave a note or edit styles.</div>
@@ -22,6 +22,7 @@ export function mountAgentNotesPanel(container: HTMLElement): () => void {
       <button type="button" class="dialkit-button" data-save>Save note</button>
       <button type="button" class="dialkit-button" data-css>Edit styles</button>
       <button type="button" class="dialkit-button dialkit-feedback-btn-accent" data-copy>Copy for agent</button>
+      <button type="button" class="dialkit-button" data-json>Copy JSON</button>
     </div>
     <div class="dialkit-feedback-status" data-status hidden></div>
     <div class="dialkit-feedback-notes" data-notes></div>
@@ -64,7 +65,9 @@ export function mountAgentNotesPanel(container: HTMLElement): () => void {
         ${note.selector ? `<code>${escapeHtml(note.selector)}</code>` : ''}
         ${note.panelName ? `<span class="dialkit-feedback-note-panel">Panel: ${escapeHtml(note.panelName)}</span>` : ''}
         <p>${escapeHtml(note.comment || '(no comment)')}</p>
+        ${(note.replies ?? []).map((r) => `<p class="dialkit-feedback-reply">${escapeHtml(r.body)}</p>`).join('')}
         <div class="dialkit-feedback-note-actions">
+          <button type="button" class="dialkit-feedback-link" data-reply="${note.id}">Reply</button>
           <button type="button" class="dialkit-feedback-link" data-toggle="${note.id}">${note.status === 'open' ? 'Mark done' : 'Reopen'}</button>
           <button type="button" class="dialkit-feedback-link dialkit-feedback-link-danger" data-delete="${note.id}">Delete</button>
         </div>
@@ -136,6 +139,11 @@ export function mountAgentNotesPanel(container: HTMLElement): () => void {
     render();
   });
 
+  root.querySelector('[data-json]')?.addEventListener('click', async () => {
+    const ok = await DevSessionStore.copyJsonExport();
+    setStatus(ok ? 'Copied JSON export.' : 'Copy failed.');
+  });
+
   root.querySelector('[data-clear]')?.addEventListener('click', () => {
     DevSessionStore.clearExported();
     render();
@@ -153,11 +161,16 @@ export function mountAgentNotesPanel(container: HTMLElement): () => void {
     const t = e.target as HTMLElement;
     const toggleId = t.getAttribute('data-toggle');
     const deleteId = t.getAttribute('data-delete');
+    const replyId = t.getAttribute('data-reply');
     if (toggleId) {
       const note = DevSessionStore.getNotes().find((n) => n.id === toggleId);
       if (note) DevSessionStore.updateNote(toggleId, { status: note.status === 'open' ? 'done' : 'open' });
     }
     if (deleteId) DevSessionStore.deleteNote(deleteId);
+    if (replyId) {
+      const body = prompt('Reply');
+      if (body) DevSessionStore.addReply(replyId, body);
+    }
   });
 
   const onMove = (e: MouseEvent) => {

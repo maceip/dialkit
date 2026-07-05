@@ -3,12 +3,23 @@ import { DialStore } from '../store/DialStore';
 import { inspectElement } from '../utils/dom-inspect';
 import type { ElementInfo } from '../utils/dom-inspect';
 import { matchPanelForTarget } from './panel-link';
+import { registerElementDialPanel, unregisterElementDialPanel } from './element-panel';
+import { listComputedStyleDefs } from './computed-styles';
+import { buildCssPatch } from './css-patch';
+import { globalCssUndo } from './css-undo';
 import {
   CSS_INSPECTOR_PROPERTIES,
   applyCssOverride,
   readCssValues,
   type CssPropertyDef,
 } from './css-inspector';
+import {
+  MoveTool,
+  alignElement,
+  showMeasureOverlay,
+  type MeasureOverlay,
+} from './layout-tools';
+import { requestScreenshot } from './screenshot';
 
 export interface DevSessionHostOptions {
   projectKey?: string;
@@ -28,10 +39,12 @@ export class DevSessionHost {
   private targetInfo: ElementInfo | null = null;
   private cssTarget: HTMLElement | null = null;
   private cssValues: Record<string, string> = {};
+  private cssMode: 'common' | 'all' = 'common';
   private menuPos = { x: 0, y: 0 };
-  private noteText = '';
   private unsubStore: (() => void) | null = null;
   private projectKey: string;
+  private moveTool = new MoveTool();
+  private measureOverlay: MeasureOverlay | null = null;
 
   constructor(options: DevSessionHostOptions = {}) {
     this.projectKey = options.projectKey ?? 'default';
@@ -44,9 +57,7 @@ export class DevSessionHost {
   }
 
   mount(): () => void {
-    if (activeHost && activeHost !== this) {
-      activeHost.unmount();
-    }
+    if (activeHost && activeHost !== this) activeHost.unmount();
     activeHost = this;
     DevSessionStore.configure(this.projectKey);
     document.body.appendChild(this.root);
@@ -64,6 +75,10 @@ export class DevSessionHost {
     document.removeEventListener('keydown', this.onKeyDown, true);
     this.unsubStore?.();
     this.unsubStore = null;
+    this.moveTool.stop();
+    this.measureOverlay?.cleanup();
+    this.measureOverlay = null;
+    unregisterElementDialPanel();
     this.clearTargetHighlight();
     this.hideAll();
     this.root.remove();
@@ -80,6 +95,9 @@ export class DevSessionHost {
     this.targetInfo = el ? inspectElement(el) : null;
     if (el) {
       el.classList.add('dialkit-feedback-selected');
+      if (el instanceof HTMLElement) registerElementDialPanel(el, this.targetInfo!);
+    } else {
+      unregisterElementDialPanel();
     }
     this.notify();
   }
@@ -93,15 +111,10 @@ export class DevSessionHost {
   }
 
   openNoteComposer(x?: number, y?: number): void {
-    if (x !== undefined && y !== undefined) {
-      this.menuPos = { x, y };
-    }
+    if (x !== undefined && y !== undefined) this.menuPos = { x, y };
     this.positionFloating(this.noteComposer, this.menuPos.x, this.menuPos.y);
     const textarea = this.noteComposer.querySelector('textarea');
-    if (textarea instanceof HTMLTextAreaElement) {
-      textarea.value = this.noteText;
-      setTimeout(() => textarea.focus(), 0);
-    }
+    if (textarea instanceof HTMLTextAreaElement) setTimeout(() => textarea.focus(), 0);
     this.updateNoteComposerMeta();
     this.noteComposer.hidden = false;
     this.contextMenu.hidden = true;
@@ -110,6 +123,7 @@ export class DevSessionHost {
   openCssInspector(el?: HTMLElement): void {
     const target = el ?? (this.targetEl instanceof HTMLElement ? this.targetEl : null);
     if (!target) return;
+    this.setTarget(target);
     this.cssTarget = target;
     this.cssValues = readCssValues(target);
     this.renderCssFields();
@@ -138,24 +152,33 @@ export class DevSessionHost {
   private onDocumentClick = (e: MouseEvent): void => {
     const t = e.target as Node | null;
     if (!t) return;
-    if (this.contextMenu.contains(t) || this.noteComposer.contains(t) || this.cssPanel.contains(t)) {
-      return;
-    }
+    if (this.contextMenu.contains(t) || this.noteComposer.contains(t) || this.cssPanel.contains(t)) return;
     this.hideAll();
   };
 
   private onKeyDown = (e: KeyboardEvent): void => {
-    if (e.key !== 'Escape') return;
-    this.hideAll();
-    this.clearTargetHighlight();
-    this.targetEl = null;
-    this.targetInfo = null;
+    if (e.key === 'Escape') {
+      this.hideAll();
+      this.clearTargetHighlight();
+      this.targetEl = null;
+      this.targetInfo = null;
+      unregisterElementDialPanel();
+      return;
+    }
+    if ((e.metaKey || e.ctrlKey) && e.key === 'z') {
+      if (e.shiftKey) this.redoCss();
+      else this.undoCss();
+      e.preventDefault();
+    }
   };
 
   private hideAll(): void {
     this.contextMenu.hidden = true;
     this.noteComposer.hidden = true;
     this.cssPanel.hidden = true;
+    this.measureOverlay?.cleanup();
+    this.measureOverlay = null;
+    this.moveTool.stop();
   }
 
   private clearTargetHighlight(): void {
@@ -167,7 +190,7 @@ export class DevSessionHost {
 
   private positionFloating(el: HTMLElement, x: number, y: number): void {
     const pad = 8;
-    const rect = { width: 260, height: 200 };
+    const rect = { width: 280, height: 220 };
     let left = x;
     let top = y;
     if (left + rect.width > window.innerWidth - pad) left = window.innerWidth - rect.width - pad;
@@ -183,18 +206,39 @@ export class DevSessionHost {
     menu.innerHTML = `
       <button type="button" data-action="note">Leave note</button>
       <button type="button" data-action="css">Edit styles</button>
-      <button type="button" data-action="tag">Tag element</button>
+      <button type="button" data-action="dial">Open dial panel</button>
+      <button type="button" data-action="measure">Measure</button>
+      <button type="button" data-action="move">Move</button>
+      <button type="button" data-action="align-left">Align left</button>
+      <button type="button" data-action="align-center">Align center</button>
+      <button type="button" data-action="align-right">Align right</button>
     `;
     menu.addEventListener('click', (e) => {
       const btn = (e.target as Element).closest('[data-action]');
-      if (!btn) return;
+      if (!btn || !(this.targetEl instanceof HTMLElement)) return;
       const action = btn.getAttribute('data-action');
       if (action === 'note') this.openNoteComposer(this.menuPos.x, this.menuPos.y);
-      if (action === 'css' && this.targetEl instanceof HTMLElement) this.openCssInspector(this.targetEl);
-      if (action === 'tag') {
+      if (action === 'css') this.openCssInspector(this.targetEl);
+      if (action === 'dial') {
+        registerElementDialPanel(this.targetEl, this.targetInfo!);
         this.contextMenu.hidden = true;
-        this.notify();
       }
+      if (action === 'measure') {
+        this.measureOverlay?.cleanup();
+        this.measureOverlay = showMeasureOverlay(this.targetEl);
+        this.contextMenu.hidden = true;
+      }
+      if (action === 'move') {
+        this.contextMenu.hidden = true;
+        const start = (ev: MouseEvent) => {
+          this.moveTool.start(this.targetEl as HTMLElement, ev);
+          document.removeEventListener('mousedown', start, true);
+        };
+        document.addEventListener('mousedown', start, true);
+      }
+      if (action === 'align-left') { alignElement(this.targetEl, 'left'); this.contextMenu.hidden = true; }
+      if (action === 'align-center') { alignElement(this.targetEl, 'center'); this.contextMenu.hidden = true; }
+      if (action === 'align-right') { alignElement(this.targetEl, 'right'); this.contextMenu.hidden = true; }
     });
     return menu;
   }
@@ -212,32 +256,35 @@ export class DevSessionHost {
         <button type="button" data-cancel>Cancel</button>
       </div>
     `;
-    panel.querySelector('[data-close]')?.addEventListener('click', () => {
-      panel.hidden = true;
-    });
-    panel.querySelector('[data-cancel]')?.addEventListener('click', () => {
-      panel.hidden = true;
-    });
-    panel.querySelector('[data-save]')?.addEventListener('click', () => {
-      const textarea = panel.querySelector('textarea');
-      const comment = textarea instanceof HTMLTextAreaElement ? textarea.value : '';
-      const panels = DialStore.getPanels();
-      const matched = matchPanelForTarget(this.targetInfo, panels);
-      DevSessionStore.addNote({
-        comment,
-        target: this.targetInfo,
-        panelId: matched?.id,
-        panelName: matched?.name,
-        dialSnapshot: matched ? DialStore.getValues(matched.id) : undefined,
-      });
-      if (textarea instanceof HTMLTextAreaElement) textarea.value = '';
-      panel.hidden = true;
-      this.clearTargetHighlight();
-      this.targetEl = null;
-      this.targetInfo = null;
-      this.notify();
-    });
+    panel.querySelector('[data-close]')?.addEventListener('click', () => { panel.hidden = true; });
+    panel.querySelector('[data-cancel]')?.addEventListener('click', () => { panel.hidden = true; });
+    panel.querySelector('[data-save]')?.addEventListener('click', () => void this.saveNote(panel));
     return panel;
+  }
+
+  private async saveNote(panel: HTMLDivElement): Promise<void> {
+    const textarea = panel.querySelector('textarea');
+    const comment = textarea instanceof HTMLTextAreaElement ? textarea.value : '';
+    const panels = DialStore.getPanels();
+    const matched = matchPanelForTarget(this.targetInfo, panels);
+    const screenshotDataUrl = this.targetEl
+      ? await requestScreenshot(this.targetInfo!, this.targetEl)
+      : null;
+    DevSessionStore.addNote({
+      comment,
+      target: this.targetInfo,
+      panelId: matched?.id,
+      panelName: matched?.name,
+      dialSnapshot: matched ? DialStore.getValues(matched.id) : undefined,
+      screenshotDataUrl,
+    });
+    if (textarea instanceof HTMLTextAreaElement) textarea.value = '';
+    panel.hidden = true;
+    this.clearTargetHighlight();
+    this.targetEl = null;
+    this.targetInfo = null;
+    unregisterElementDialPanel();
+    this.notify();
   }
 
   private updateNoteComposerMeta(): void {
@@ -247,6 +294,9 @@ export class DevSessionHost {
     const matched = matchPanelForTarget(this.targetInfo, panels);
     const lines: string[] = [];
     if (this.targetInfo?.selector) lines.push(`<code>${escapeHtml(this.targetInfo.selector)}</code>`);
+    if (this.targetInfo?.source?.file) {
+      lines.push(`<span>${escapeHtml(this.targetInfo.source.file)}${this.targetInfo.source.line ? `:${this.targetInfo.source.line}` : ''}</span>`);
+    }
     if (this.targetInfo?.reactComponent) lines.push(`<span>${escapeHtml(this.targetInfo.reactComponent)}</span>`);
     if (matched) lines.push(`<span>Panel: ${escapeHtml(matched.name)}</span>`);
     meta.innerHTML = lines.join('') || '<span>Tagged element</span>';
@@ -261,26 +311,59 @@ export class DevSessionHost {
         <strong>Style editor</strong>
         <button type="button" data-close>&times;</button>
       </div>
+      <div class="dialkit-dev-css-toolbar">
+        <button type="button" data-undo>Undo</button>
+        <button type="button" data-redo>Redo</button>
+        <button type="button" data-mode>All props</button>
+        <button type="button" data-patch>Copy patch</button>
+      </div>
       <div class="dialkit-dev-css-fields"></div>
     `;
-    panel.querySelector('[data-close]')?.addEventListener('click', () => {
-      panel.hidden = true;
+    panel.querySelector('[data-close]')?.addEventListener('click', () => { panel.hidden = true; });
+    panel.querySelector('[data-undo]')?.addEventListener('click', () => this.undoCss());
+    panel.querySelector('[data-redo]')?.addEventListener('click', () => this.redoCss());
+    panel.querySelector('[data-mode]')?.addEventListener('click', (e) => {
+      this.cssMode = this.cssMode === 'common' ? 'all' : 'common';
+      const btn = e.currentTarget as HTMLButtonElement;
+      btn.textContent = this.cssMode === 'common' ? 'All props' : 'Common';
+      this.renderCssFields();
+    });
+    panel.querySelector('[data-patch]')?.addEventListener('click', async () => {
+      const patch = buildCssPatch(DevSessionStore.getPendingCssOverrides());
+      if (navigator.clipboard?.writeText) await navigator.clipboard.writeText(patch);
     });
     return panel;
+  }
+
+  private undoCss(): void {
+    const entry = globalCssUndo.undo();
+    if (!entry || !this.cssTarget) return;
+    applyCssOverride(this.cssTarget, entry.property, entry.previousValue);
+    this.cssValues[entry.property] = entry.previousValue;
+    this.renderCssFields();
+  }
+
+  private redoCss(): void {
+    const entry = globalCssUndo.redo();
+    if (!entry || !this.cssTarget) return;
+    applyCssOverride(this.cssTarget, entry.property, entry.nextValue);
+    this.cssValues[entry.property] = entry.nextValue;
+    this.renderCssFields();
   }
 
   private renderCssFields(): void {
     const container = this.cssPanel.querySelector('.dialkit-dev-css-fields');
     if (!container || !this.cssTarget) return;
     container.innerHTML = '';
-    const defs = this.getRelevantDefs(this.cssTarget);
+    const defs = this.cssMode === 'all'
+      ? listComputedStyleDefs(this.cssTarget)
+      : this.getRelevantDefs(this.cssTarget);
     for (const def of defs) {
       const row = document.createElement('label');
       row.className = 'dialkit-dev-css-row';
       const value = this.cssValues[def.key] ?? '';
       row.innerHTML = `<span>${escapeHtml(def.label)}</span>`;
-      const input = this.createCssInput(def, value);
-      row.appendChild(input);
+      row.appendChild(this.createCssInput(def, value));
       container.appendChild(row);
     }
   }
@@ -308,11 +391,7 @@ export class DevSessionHost {
     }
     const input = document.createElement('input');
     input.type = def.type === 'color' ? 'color' : def.type === 'number' ? 'number' : 'text';
-    if (def.type === 'color') {
-      input.value = toHexColor(value);
-    } else {
-      input.value = value;
-    }
+    input.value = def.type === 'color' ? toHexColor(value) : value;
     input.addEventListener('change', () => this.commitCss(def.key, input.value));
     input.addEventListener('input', () => {
       if (def.type === 'color' || def.type === 'number') this.commitCss(def.key, input.value);
@@ -323,6 +402,12 @@ export class DevSessionHost {
   private commitCss(property: string, value: string): void {
     if (!this.cssTarget || !this.targetInfo) return;
     const previous = applyCssOverride(this.cssTarget, property, value);
+    globalCssUndo.push({
+      selector: this.targetInfo.selector,
+      property,
+      previousValue: previous,
+      nextValue: value,
+    });
     this.cssValues[property] = value;
     DevSessionStore.logCssOverride({
       selector: this.targetInfo.selector,
@@ -337,11 +422,7 @@ export class DevSessionHost {
 }
 
 function escapeHtml(value: string): string {
-  return value
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
+  return value.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
 function toHexColor(value: string): string {
@@ -350,8 +431,7 @@ function toHexColor(value: string): string {
   if (!ctx) return '#000000';
   ctx.fillStyle = value || '#000000';
   const normalized = ctx.fillStyle;
-  if (/^#[0-9a-f]{6}$/i.test(normalized)) return normalized;
-  return '#000000';
+  return /^#[0-9a-f]{6}$/i.test(normalized) ? normalized : '#000000';
 }
 
 export function mountDevSessionHost(options?: DevSessionHostOptions): () => void {
@@ -361,4 +441,8 @@ export function mountDevSessionHost(options?: DevSessionHostOptions): () => void
 
 export function getDevSessionHost(): DevSessionHost | null {
   return activeHost;
+}
+
+export function unmountDevSessionHost(): void {
+  activeHost?.unmount();
 }

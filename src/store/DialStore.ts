@@ -105,6 +105,7 @@ export type PanelConfig = {
   id: string;
   name: string;
   componentName?: string;
+  source?: { file: string; line?: number; column?: number };
   controls: ControlMeta[];
   values: Record<string, DialValue>;
   shortcuts: Record<string, ShortcutConfig>;
@@ -136,6 +137,7 @@ export type DialStorePanelOptions = {
   retainOnUnmount?: boolean;
   persist?: DialKitPersistOptions;
   componentName?: string;
+  source?: { file: string; line?: number; column?: number };
 };
 
 type PersistConfig = {
@@ -329,6 +331,7 @@ class DialStoreClass {
       id,
       name,
       componentName: options.componentName ?? this.panels.get(id)?.componentName,
+      source: options.source ?? this.panels.get(id)?.source,
       controls,
       values,
       shortcuts: shortcuts ?? {},
@@ -368,6 +371,7 @@ class DialStoreClass {
       id,
       name,
       componentName: options.componentName ?? existing.componentName,
+      source: options.source ?? existing.source,
       controls,
       values: nextValues,
       shortcuts: shortcuts ?? existing.shortcuts,

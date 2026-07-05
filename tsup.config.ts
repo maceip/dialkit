@@ -78,14 +78,18 @@ export default defineConfig([
     external: ['vue', 'motion-v'],
     tsconfig: 'tsconfig.vue.json',
   },
-  // Inject / extension standalone bundle
+  // Inject / extension full DialKit bootstrap (bundles React)
   {
-    entry: { inject: 'src/inject/standalone.ts' },
+    entry: { inject: 'src/inject/extension-bootstrap.tsx' },
     outDir: 'dist/inject',
     format: ['esm'],
     dts: true,
     splitting: false,
     sourcemap: true,
     platform: 'browser',
+    noExternal: ['react', 'react-dom'],
+    esbuildOptions(options) {
+      options.jsx = 'automatic';
+    },
   },
 ]);
