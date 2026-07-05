@@ -50,9 +50,12 @@ function disableFullDialKit(): void {
 if (typeof window !== 'undefined') {
   if (!screenshotProviderSet) {
     screenshotProviderSet = true;
-    setExtensionScreenshotProvider(async () => {
+    setExtensionScreenshotProvider(async (info) => {
       return new Promise((resolve) => {
-        window.postMessage({ type: 'dialkit-request-screenshot' }, '*');
+        window.postMessage({
+          type: 'dialkit-request-screenshot',
+          rect: info.rect,
+        }, '*');
         const handler = (event: MessageEvent) => {
           if (event.source !== window || event.data?.type !== 'dialkit-screenshot') return;
           window.removeEventListener('message', handler);
@@ -93,6 +96,8 @@ if (typeof window !== 'undefined') {
   if (enabled) {
     mountFullDialKit(params.get('dialkit-project') ?? 'extension');
   }
+
+  window.postMessage({ type: 'dialkit-ready' }, '*');
 }
 
 export { mountFullDialKit, disableFullDialKit };

@@ -132,5 +132,8 @@
   "repository": {
     "type": "git",
     "url": "https://github.com/maceip/dialkit"
+  },
+  "dependencies": {
+    "html-to-image": "^1.11.13"
   }
 }
