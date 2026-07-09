@@ -1,5 +1,78 @@
 import { defineConfig } from 'tsup';
 import { solidPlugin } from 'esbuild-plugin-solid';
+import * as sass from 'sass';
+import postcss from 'postcss';
+import postcssModules from 'postcss-modules';
+import * as path from 'path';
+import * as fs from 'fs';
+import type { Plugin } from 'esbuild';
+
+const pkg = JSON.parse(fs.readFileSync('./package.json', 'utf-8'));
+const VERSION = pkg.version;
+
+function scssModulesPlugin(): Plugin {
+  return {
+    name: 'scss-modules',
+    setup(build) {
+      build.onLoad({ filter: /\.scss$/ }, async (args) => {
+        const isModule = args.path.includes('.module.');
+        const parentDir = path.basename(path.dirname(args.path));
+        const baseName = path.basename(args.path, isModule ? '.module.scss' : '.scss');
+        const styleId = `dialkit-annotation-${parentDir}-${baseName}`;
+
+        const result = sass.compile(args.path);
+        let css = result.css;
+
+        if (isModule) {
+          let classNames: Record<string, string> = {};
+          const postcssResult = await postcss([
+            postcssModules({
+              getJSON(_cssFileName, json) {
+                classNames = json;
+              },
+              generateScopedName: 'dkann_[name]__[local]___[hash:base64:5]',
+            }),
+          ]).process(css, { from: args.path });
+
+          css = postcssResult.css;
+
+          const contents = `
+const css = ${JSON.stringify(css)};
+const classNames = ${JSON.stringify(classNames)};
+
+if (typeof document !== 'undefined') {
+  let style = document.getElementById('${styleId}');
+  if (!style) {
+    style = document.createElement('style');
+    style.id = '${styleId}';
+    document.head.appendChild(style);
+  }
+  style.textContent = css;
+}
+
+export default classNames;
+`;
+          return { contents, loader: 'js' };
+        }
+
+        const contents = `
+const css = ${JSON.stringify(css)};
+if (typeof document !== 'undefined') {
+  let style = document.getElementById('${styleId}');
+  if (!style) {
+    style = document.createElement('style');
+    style.id = '${styleId}';
+    document.head.appendChild(style);
+  }
+  style.textContent = css;
+}
+export default {};
+`;
+        return { contents, loader: 'js' };
+      });
+    },
+  };
+}
 
 const externalPackageStorePlugin = {
   name: 'external-package-store',
@@ -43,6 +116,10 @@ export default defineConfig([
     splitting: false,
     sourcemap: true,
     external: ['react', 'react-dom', 'motion'],
+    esbuildPlugins: [scssModulesPlugin()],
+    define: {
+      __VERSION__: JSON.stringify(VERSION),
+    },
     esbuildOptions(options) {
       options.banner = {
         js: '"use client";',
@@ -88,6 +165,10 @@ export default defineConfig([
     sourcemap: true,
     platform: 'browser',
     noExternal: ['react', 'react-dom'],
+    esbuildPlugins: [scssModulesPlugin()],
+    define: {
+      __VERSION__: JSON.stringify(VERSION),
+    },
     esbuildOptions(options) {
       options.jsx = 'automatic';
     },
