@@ -880,8 +880,17 @@ Return values are fully typed: `params.blur` infers as `number`, `params.color` 
 
 Enable a VisBug-style review layer: right-click any element to leave agent notes, edit CSS inline, open dynamic dial panels, and export markdown/JSON for agents.
 
+With `devSession` enabled, DialKit also mounts a local page-annotation toolbar (UI adapted from [Agentation](https://github.com/benjitaylor/agentation)): click elements, select text, multi-select, and copy structured feedback. Annotations persist in **browser localStorage** and mirror into DialKit’s local `DevSessionStore`. Hosted annotation storage, MCP cloud sync, webhooks, and telemetry from upstream are **not** included.
+
 ```tsx
 <DialRoot devSession={{ projectKey: 'my-app' }} />
+```
+
+```tsx
+import { AnnotationToolbar } from 'dialkit';
+
+// Standalone local-only toolbar (same storage bridge)
+<AnnotationToolbar projectKey="my-app" />
 ```
 
 ```tsx

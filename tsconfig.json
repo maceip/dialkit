@@ -23,7 +23,11 @@
     "src/index.ts",
     "src/components/**/*",
     "src/hooks/**/*",
-    "src/store/**/*"
+    "src/store/**/*",
+    "src/annotation/**/*",
+    "src/dev-session/**/*",
+    "src/utils/**/*",
+    "src/inject/**/*"
   ],
   "exclude": ["node_modules", "dist", "example"]
 }

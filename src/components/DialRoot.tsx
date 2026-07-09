@@ -6,6 +6,7 @@ import { Panel } from './Panel';
 import { ShortcutListener } from './ShortcutListener';
 import { FeedbackPanel } from './FeedbackPanel';
 import { DevSessionHost } from './DevSessionHost';
+import { AnnotationToolbar } from './AnnotationToolbar';
 import { DevSessionStore } from '../store/DevSessionStore';
 import { blockPanelDragClick, getPanelDragHandle, getPanelDragOffset, getPanelDragStart, getPanelOriginX, hasPanelDragMoved } from '../panel-drag';
 
@@ -203,6 +204,7 @@ function DialRootInner({
   <ShortcutListener>
     <div className="dialkit-root" data-mode={mode} data-theme={theme}>
       {devSessionEnabled ? <DevSessionHost projectKey={projectKey} /> : null}
+      {devSessionEnabled ? <AnnotationToolbar projectKey={projectKey} /> : null}
       <div
         ref={panelRef}
         className="dialkit-panel"

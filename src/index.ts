@@ -7,6 +7,8 @@ export { useDevDialKit, useDevDialKitController } from './hooks/useDevDialKit';
 export { DialRoot } from './components/DialRoot';
 export type { DialPosition, DialMode, DialTheme } from './components/DialRoot';
 export { FeedbackPanel } from './components/FeedbackPanel';
+export { AnnotationToolbar } from './components/AnnotationToolbar';
+export type { AnnotationToolbarProps } from './components/AnnotationToolbar';
 
 // Dev session (notes + change queue for agents)
 export { DevSessionStore } from './store/DevSessionStore';
@@ -61,3 +63,7 @@ export type {
   DialChangeEvent,
   PanelConfig,
 } from './store/DialStore';
+
+// Page annotation toolbar (local-only Agentation UI)
+export { Agentation, PageFeedbackToolbarCSS } from './annotation';
+export type { Annotation, AgentationProps, DemoAnnotation } from './annotation';
