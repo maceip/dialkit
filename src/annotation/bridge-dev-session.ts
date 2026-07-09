@@ -93,12 +93,18 @@ function findMirroredNote(
   return targetMatches.length === 1 ? targetMatches[0] : undefined;
 }
 
+function findMirroredNoteByAnnotationId(annotation: Annotation): DevNote | undefined {
+  return DevSessionStore.getNotes().find(
+    (note) => note.status === 'open' && note.annotationId === annotation.id,
+  );
+}
+
 export function syncAnnotationToDevSession(annotation: Annotation, projectKey?: string): void {
   if (annotation.kind && annotation.kind !== 'feedback') return;
   if (!annotation.comment?.trim()) return;
   ensureDevSessionConfigured(projectKey);
   const input = annotationToDevNoteInput(annotation);
-  const match = findMirroredNote(annotation, { includeExported: true });
+  const match = findMirroredNoteByAnnotationId(annotation);
   if (match) {
     DevSessionStore.updateNote(match.id, {
       comment: input.comment,
