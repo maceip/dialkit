@@ -97,16 +97,24 @@ export function syncAnnotationToDevSession(annotation: Annotation, projectKey?: 
   if (annotation.kind && annotation.kind !== 'feedback') return;
   if (!annotation.comment?.trim()) return;
   ensureDevSessionConfigured(projectKey);
+  const input = annotationToDevNoteInput(annotation);
+  const match = findMirroredNote(annotation, { includeExported: true });
+  if (match) {
+    DevSessionStore.updateNote(match.id, {
+      comment: input.comment,
+    });
+    return;
+  }
   DevSessionStore.addNote({
     annotationId: annotation.id,
-    ...annotationToDevNoteInput(annotation),
+    ...input,
   });
 }
 
 export function syncAnnotationUpdateToDevSession(annotation: Annotation, projectKey?: string): void {
   if (annotation.kind && annotation.kind !== 'feedback') return;
   ensureDevSessionConfigured(projectKey);
-  const match = findMirroredNote(annotation);
+  const match = findMirroredNote(annotation, { includeExported: true });
   if (match) {
     DevSessionStore.updateNote(match.id, {
       comment: annotationToDevNoteInput(annotation).comment,

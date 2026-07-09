@@ -81,6 +81,15 @@ describe('annotation bridge to DevSessionStore', () => {
     expect(notes[0].annotationId).toBe('1');
   });
 
+  it('upserts an existing mirrored note instead of duplicating it', () => {
+    syncAnnotationToDevSession(makeAnnotation());
+    syncAnnotationToDevSession(makeAnnotation({ comment: 'Updated note' }));
+
+    const notes = DevSessionStore.getNotes();
+    expect(notes).toHaveLength(1);
+    expect(notes[0].comment).toContain('Updated note');
+  });
+
   it('skips non-feedback annotation kinds', () => {
     syncAnnotationToDevSession(makeAnnotation({ kind: 'placement', comment: 'place' }));
     expect(DevSessionStore.getNotes().length).toBe(0);
@@ -102,6 +111,23 @@ describe('annotation bridge to DevSessionStore', () => {
     notes = DevSessionStore.getNotes();
     expect(notes.some((note) => note.annotationId === '1')).toBe(true);
     expect(notes.some((note) => note.annotationId === '2')).toBe(false);
+  });
+
+  it('updates an exported mirrored note instead of adding a duplicate', () => {
+    const annotation = makeAnnotation();
+
+    syncAnnotationToDevSession(annotation);
+    DevSessionStore.markExported();
+
+    syncAnnotationUpdateToDevSession({
+      ...annotation,
+      comment: 'Updated after export',
+    });
+
+    const notes = DevSessionStore.getNotes();
+    expect(notes).toHaveLength(1);
+    expect(notes[0].comment).toContain('Updated after export');
+    expect(notes[0].exportedAt).not.toBeNull();
   });
 
   it('uses the caller project key when enabling sync', () => {

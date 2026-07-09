@@ -535,6 +535,8 @@ const [settings, setSettings] = useState<ToolbarSettings>(() => {
   const scrollTimeoutRef = useRef<ReturnType<typeof originalSetTimeout> | null>(null);
   const pathname =
     typeof window !== "undefined" ? window.location.pathname : "/";
+  const annotationStoragePathRef = useRef(pathname);
+  annotationStoragePathRef.current = pathname;
   // Handle showSettings changes with exit animation
   useEffect(() => {
     if (showSettings) {
@@ -726,11 +728,11 @@ const [settings, setSettings] = useState<ToolbarSettings>(() => {
   // Persist annotations to localStorage only
   useEffect(() => {
     if (mounted && annotations.length > 0) {
-      saveAnnotations(pathname, annotations);
+      saveAnnotations(annotationStoragePathRef.current, annotations);
     } else if (mounted && annotations.length === 0) {
-      localStorage.removeItem(getStorageKey(pathname));
+      localStorage.removeItem(getStorageKey(annotationStoragePathRef.current));
     }
-  }, [annotations, pathname, mounted]);
+  }, [annotations, mounted]);
   // Load design placements from localStorage on mount
   useEffect(() => {
     if (mounted && !designPlacementsLoaded.current) {
