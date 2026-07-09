@@ -17,6 +17,7 @@ export interface DevNote {
   id: string;
   createdAt: string;
   updatedAt: string;
+  annotationId?: string;
   comment: string;
   status: 'open' | 'done';
   pagePath: string;
@@ -160,6 +161,7 @@ class DevSessionStoreImpl {
   }
 
   addNote(input: {
+    annotationId?: string;
     comment: string;
     target?: ElementInfo | null;
     panelId?: string;
@@ -178,6 +180,7 @@ class DevSessionStoreImpl {
       id: uid(),
       createdAt: now,
       updatedAt: now,
+      annotationId: input.annotationId,
       comment: input.comment.trim(),
       status: 'open',
       pagePath: typeof location !== 'undefined' ? location.pathname : '',

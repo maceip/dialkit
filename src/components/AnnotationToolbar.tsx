@@ -39,21 +39,21 @@ export function AnnotationToolbar({
     <PageFeedbackToolbarCSS
       {...rest}
       onAnnotationAdd={(annotation) => {
-        if (syncToDevSession) syncAnnotationToDevSession(annotation);
+        if (syncToDevSession) syncAnnotationToDevSession(annotation, projectKey);
         onAnnotationAdd?.(annotation);
       }}
       onAnnotationUpdate={(annotation) => {
-        if (syncToDevSession) syncAnnotationUpdateToDevSession(annotation);
+        if (syncToDevSession) syncAnnotationUpdateToDevSession(annotation, projectKey);
         onAnnotationUpdate?.(annotation);
       }}
       onAnnotationDelete={(annotation) => {
-        if (syncToDevSession) removeAnnotationFromDevSession(annotation);
+        if (syncToDevSession) removeAnnotationFromDevSession(annotation, projectKey);
         onAnnotationDelete?.(annotation);
       }}
       onAnnotationsClear={(annotations) => {
         if (syncToDevSession) {
           for (const annotation of annotations) {
-            removeAnnotationFromDevSession(annotation);
+            removeAnnotationFromDevSession(annotation, projectKey);
           }
         }
         onAnnotationsClear?.(annotations);

@@ -1,5 +1,6 @@
 import type { Annotation } from '../annotation/types';
 import { DevSessionStore } from '../store/DevSessionStore';
+import type { DevNote } from '../store/DevSessionStore';
 import type { ElementInfo } from '../utils/dom-inspect';
 
 function annotationTarget(annotation: Annotation): ElementInfo {
@@ -67,40 +68,56 @@ export function annotationToDevNoteInput(annotation: Annotation): {
   };
 }
 
-export function syncAnnotationToDevSession(annotation: Annotation): void {
-  if (annotation.kind && annotation.kind !== 'feedback') return;
-  if (!annotation.comment?.trim()) return;
-  if (!DevSessionStore.isEnabled()) {
-    DevSessionStore.configure(DevSessionStore.getProjectKey());
+function ensureDevSessionConfigured(projectKey?: string): void {
+  const nextProjectKey = projectKey ?? DevSessionStore.getProjectKey();
+  if (!DevSessionStore.isEnabled() || DevSessionStore.getProjectKey() !== nextProjectKey) {
+    DevSessionStore.configure(nextProjectKey);
   }
-  DevSessionStore.addNote(annotationToDevNoteInput(annotation));
 }
 
-export function syncAnnotationUpdateToDevSession(annotation: Annotation): void {
-  if (annotation.kind && annotation.kind !== 'feedback') return;
-  const notes = DevSessionStore.getNotes();
-  const match = notes.find(
-    (n) =>
-      n.status === 'open' &&
-      !n.exportedAt &&
-      (n.selector === annotation.elementPath || n.element === annotation.element),
+function isMatchingAnnotationTarget(note: DevNote, annotation: Annotation): boolean {
+  return note.selector === annotation.elementPath || note.element === annotation.element;
+}
+
+function findMirroredNote(
+  annotation: Annotation,
+  options?: { includeExported?: boolean },
+): DevNote | undefined {
+  const openNotes = DevSessionStore.getNotes().filter(
+    (note) => note.status === 'open' && (options?.includeExported || !note.exportedAt),
   );
+  const exactMatch = openNotes.find((note) => note.annotationId === annotation.id);
+  if (exactMatch) return exactMatch;
+
+  const targetMatches = openNotes.filter((note) => isMatchingAnnotationTarget(note, annotation));
+  return targetMatches.length === 1 ? targetMatches[0] : undefined;
+}
+
+export function syncAnnotationToDevSession(annotation: Annotation, projectKey?: string): void {
+  if (annotation.kind && annotation.kind !== 'feedback') return;
+  if (!annotation.comment?.trim()) return;
+  ensureDevSessionConfigured(projectKey);
+  DevSessionStore.addNote({
+    annotationId: annotation.id,
+    ...annotationToDevNoteInput(annotation),
+  });
+}
+
+export function syncAnnotationUpdateToDevSession(annotation: Annotation, projectKey?: string): void {
+  if (annotation.kind && annotation.kind !== 'feedback') return;
+  ensureDevSessionConfigured(projectKey);
+  const match = findMirroredNote(annotation);
   if (match) {
     DevSessionStore.updateNote(match.id, {
       comment: annotationToDevNoteInput(annotation).comment,
     });
   } else {
-    syncAnnotationToDevSession(annotation);
+    syncAnnotationToDevSession(annotation, projectKey);
   }
 }
 
-export function removeAnnotationFromDevSession(annotation: Annotation): void {
-  const notes = DevSessionStore.getNotes();
-  const match = notes.find(
-    (n) =>
-      n.status === 'open' &&
-      (n.selector === annotation.elementPath || n.element === annotation.element) &&
-      n.comment.includes(annotation.comment.trim().slice(0, 40)),
-  );
+export function removeAnnotationFromDevSession(annotation: Annotation, projectKey?: string): void {
+  ensureDevSessionConfigured(projectKey);
+  const match = findMirroredNote(annotation, { includeExported: true });
   if (match) DevSessionStore.deleteNote(match.id);
 }
