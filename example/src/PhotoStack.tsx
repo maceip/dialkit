@@ -111,7 +111,9 @@ export function PhotoStack() {
       transition: 'background 0.3s ease',
     }}>
       <div style={{ paddingLeft: stage.titleInset }}>
-        <h1 style={{
+        <h1
+          data-testid="demo-title"
+          style={{
           fontSize: 48,
           fontWeight: 600,
           color: textColor,
@@ -122,7 +124,9 @@ export function PhotoStack() {
         }}>
           {params.title}
         </h1>
-        <p style={{
+        <p
+          data-testid="demo-subtitle"
+          style={{
           fontSize: 18,
           color: subtextColor,
           margin: 0,

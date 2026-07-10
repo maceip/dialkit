@@ -1,8 +1,6 @@
 import { DevSessionStore } from '../store/DevSessionStore';
-import { DialStore } from '../store/DialStore';
 import { inspectElement } from '../utils/dom-inspect';
 import type { ElementInfo } from '../utils/dom-inspect';
-import { matchPanelForTarget } from './panel-link';
 import { registerElementDialPanel, unregisterElementDialPanel } from './element-panel';
 import { listComputedStyleDefs } from './computed-styles';
 import { buildCssPatch } from './css-patch';
@@ -13,13 +11,7 @@ import {
   readCssValues,
   type CssPropertyDef,
 } from './css-inspector';
-import {
-  MoveTool,
-  alignElement,
-  showMeasureOverlay,
-  type MeasureOverlay,
-} from './layout-tools';
-import { requestScreenshot } from './screenshot';
+import { MoveTool } from './layout-tools';
 
 export interface DevSessionHostOptions {
   projectKey?: string;
@@ -32,7 +24,6 @@ let activeHost: DevSessionHost | null = null;
 export class DevSessionHost {
   private root: HTMLDivElement;
   private contextMenu: HTMLDivElement;
-  private noteComposer: HTMLDivElement;
   private cssPanel: HTMLDivElement;
   private listeners = new Set<HostListener>();
   private targetEl: Element | null = null;
@@ -44,16 +35,14 @@ export class DevSessionHost {
   private unsubStore: (() => void) | null = null;
   private projectKey: string;
   private moveTool = new MoveTool();
-  private measureOverlay: MeasureOverlay | null = null;
 
   constructor(options: DevSessionHostOptions = {}) {
     this.projectKey = options.projectKey ?? 'default';
     this.root = document.createElement('div');
     this.root.className = 'dialkit-dev-host';
     this.contextMenu = this.createContextMenu();
-    this.noteComposer = this.createNoteComposer();
     this.cssPanel = this.createCssPanel();
-    this.root.append(this.contextMenu, this.noteComposer, this.cssPanel);
+    this.root.append(this.contextMenu, this.cssPanel);
   }
 
   mount(): () => void {
@@ -76,8 +65,6 @@ export class DevSessionHost {
     this.unsubStore?.();
     this.unsubStore = null;
     this.moveTool.stop();
-    this.measureOverlay?.cleanup();
-    this.measureOverlay = null;
     unregisterElementDialPanel();
     this.clearTargetHighlight();
     this.hideAll();
@@ -116,15 +103,6 @@ export class DevSessionHost {
     return this.targetInfo;
   }
 
-  openNoteComposer(x?: number, y?: number): void {
-    if (x !== undefined && y !== undefined) this.menuPos = { x, y };
-    this.positionFloating(this.noteComposer, this.menuPos.x, this.menuPos.y);
-    const textarea = this.noteComposer.querySelector('textarea');
-    if (textarea instanceof HTMLTextAreaElement) setTimeout(() => textarea.focus(), 0);
-    this.updateNoteComposerMeta();
-    this.noteComposer.hidden = false;
-    this.contextMenu.hidden = true;
-  }
 
   openCssInspector(el?: HTMLElement): void {
     const target = el ?? (this.targetEl instanceof HTMLElement ? this.targetEl : null);
@@ -135,7 +113,6 @@ export class DevSessionHost {
     this.renderCssFields();
     this.cssPanel.hidden = false;
     this.contextMenu.hidden = true;
-    this.noteComposer.hidden = true;
   }
 
   private notify(): void {
@@ -144,21 +121,20 @@ export class DevSessionHost {
 
   private onContextMenu = (e: MouseEvent): void => {
     const el = e.target as Element | null;
-    if (!el || el.closest('.dialkit-root, .dialkit-dev-host')) return;
+    if (!el || el.closest('.dialkit-root, .dialkit-dev-host, [data-dialkit-annotation-toolbar], [data-dialkit-annotation-root]')) return;
     e.preventDefault();
     e.stopPropagation();
     this.setTarget(el, { registerDialPanel: false });
     this.menuPos = { x: e.clientX, y: e.clientY };
     this.positionFloating(this.contextMenu, e.clientX, e.clientY);
     this.contextMenu.hidden = false;
-    this.noteComposer.hidden = true;
     this.cssPanel.hidden = true;
   };
 
   private onDocumentClick = (e: MouseEvent): void => {
     const t = e.target as Node | null;
     if (!t) return;
-    if (this.contextMenu.contains(t) || this.noteComposer.contains(t) || this.cssPanel.contains(t)) return;
+    if (this.contextMenu.contains(t) || this.cssPanel.contains(t)) return;
     this.hideAll();
   };
 
@@ -183,10 +159,7 @@ export class DevSessionHost {
 
   private hideAll(): void {
     this.contextMenu.hidden = true;
-    this.noteComposer.hidden = true;
     this.cssPanel.hidden = true;
-    this.measureOverlay?.cleanup();
-    this.measureOverlay = null;
     this.moveTool.stop();
   }
 
@@ -213,29 +186,21 @@ export class DevSessionHost {
     menu.className = 'dialkit-dev-context-menu';
     menu.hidden = true;
     menu.innerHTML = `
-      <button type="button" data-action="note">Leave note</button>
       <button type="button" data-action="css">Edit styles</button>
       <button type="button" data-action="dial">Open dial panel</button>
-      <button type="button" data-action="measure">Measure</button>
       <button type="button" data-action="move">Move</button>
-      <button type="button" data-action="align-left">Align left</button>
-      <button type="button" data-action="align-center">Align center</button>
-      <button type="button" data-action="align-right">Align right</button>
     `;
     menu.addEventListener('click', (e) => {
       const btn = (e.target as Element).closest('[data-action]');
       if (!btn || !(this.targetEl instanceof HTMLElement)) return;
       const action = btn.getAttribute('data-action');
-      if (action === 'note') this.openNoteComposer(this.menuPos.x, this.menuPos.y);
       if (action === 'css') this.openCssInspector(this.targetEl);
       if (action === 'dial' && this.targetEl instanceof HTMLElement && this.targetInfo) {
         registerElementDialPanel(this.targetEl, this.targetInfo);
         this.contextMenu.hidden = true;
-      }
-      if (action === 'measure') {
-        this.measureOverlay?.cleanup();
-        this.measureOverlay = showMeasureOverlay(this.targetEl);
-        this.contextMenu.hidden = true;
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent('dialkit:open-dials'));
+        }
       }
       if (action === 'move') {
         this.contextMenu.hidden = true;
@@ -245,71 +210,12 @@ export class DevSessionHost {
         };
         document.addEventListener('mousedown', start, true);
       }
-      if (action === 'align-left') { alignElement(this.targetEl, 'left'); this.contextMenu.hidden = true; }
-      if (action === 'align-center') { alignElement(this.targetEl, 'center'); this.contextMenu.hidden = true; }
-      if (action === 'align-right') { alignElement(this.targetEl, 'right'); this.contextMenu.hidden = true; }
     });
     return menu;
   }
 
-  private createNoteComposer(): HTMLDivElement {
-    const panel = document.createElement('div');
-    panel.className = 'dialkit-dev-note-composer';
-    panel.hidden = true;
-    panel.innerHTML = `
-      <div class="dialkit-dev-note-head"><strong>Agent note</strong><button type="button" data-close>&times;</button></div>
-      <div class="dialkit-dev-note-meta"></div>
-      <textarea rows="3" placeholder="What should change here?"></textarea>
-      <div class="dialkit-dev-note-actions">
-        <button type="button" data-save class="dialkit-dev-btn-primary">Save note</button>
-        <button type="button" data-cancel>Cancel</button>
-      </div>
-    `;
-    panel.querySelector('[data-close]')?.addEventListener('click', () => { panel.hidden = true; });
-    panel.querySelector('[data-cancel]')?.addEventListener('click', () => { panel.hidden = true; });
-    panel.querySelector('[data-save]')?.addEventListener('click', () => void this.saveNote(panel));
-    return panel;
-  }
 
-  private async saveNote(panel: HTMLDivElement): Promise<void> {
-    const textarea = panel.querySelector('textarea');
-    const comment = textarea instanceof HTMLTextAreaElement ? textarea.value : '';
-    const panels = DialStore.getPanels();
-    const matched = matchPanelForTarget(this.targetInfo, panels);
-    const screenshotDataUrl = this.targetEl
-      ? await requestScreenshot(this.targetInfo!, this.targetEl)
-      : null;
-    DevSessionStore.addNote({
-      comment,
-      target: this.targetInfo,
-      panelId: matched?.id,
-      panelName: matched?.name,
-      dialSnapshot: matched ? DialStore.getValues(matched.id) : undefined,
-      screenshotDataUrl,
-    });
-    if (textarea instanceof HTMLTextAreaElement) textarea.value = '';
-    panel.hidden = true;
-    this.clearTargetHighlight();
-    this.targetEl = null;
-    this.targetInfo = null;
-    unregisterElementDialPanel();
-    this.notify();
-  }
 
-  private updateNoteComposerMeta(): void {
-    const meta = this.noteComposer.querySelector('.dialkit-dev-note-meta');
-    if (!meta) return;
-    const panels = DialStore.getPanels();
-    const matched = matchPanelForTarget(this.targetInfo, panels);
-    const lines: string[] = [];
-    if (this.targetInfo?.selector) lines.push(`<code>${escapeHtml(this.targetInfo.selector)}</code>`);
-    if (this.targetInfo?.source?.file) {
-      lines.push(`<span>${escapeHtml(this.targetInfo.source.file)}${this.targetInfo.source.line ? `:${this.targetInfo.source.line}` : ''}</span>`);
-    }
-    if (this.targetInfo?.reactComponent) lines.push(`<span>${escapeHtml(this.targetInfo.reactComponent)}</span>`);
-    if (matched) lines.push(`<span>Panel: ${escapeHtml(matched.name)}</span>`);
-    meta.innerHTML = lines.join('') || '<span>Tagged element</span>';
-  }
 
   private createCssPanel(): HTMLDivElement {
     const panel = document.createElement('div');

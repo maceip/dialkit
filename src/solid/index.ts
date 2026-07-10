@@ -7,6 +7,9 @@ export { createDevDialKit, createDevDialKitController } from './createDevDialKit
 export { DialRoot } from './components/DialRoot';
 export type { DialPosition, DialMode, DialTheme } from './components/DialRoot';
 export { DevSessionNotes } from './components/DevSessionNotes';
+export { AnnotationToolbar, createAnnotationStore, dialsOpen, setDialsOpen, toggleDialsOpen } from './annotation';
+export type { SolidAnnotationToolbarProps, AnnotationStore, PendingAnnotation } from './annotation';
+export type { Annotation } from '../annotation/types';
 
 // Store exports
 export { DialStore } from '../store/DialStore';

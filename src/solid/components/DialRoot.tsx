@@ -5,7 +5,9 @@ import type { PanelConfig } from '../../store/DialStore';
 import { ShortcutListener } from './ShortcutListener';
 import { Folder } from './Folder';
 import { Panel } from './Panel';
-import { DevSessionNotes } from './DevSessionNotes';
+import { AnnotationToolbar } from '../annotation';
+import { dialsOpen } from '../annotation/toolChrome';
+import { bootstrapDevSession } from '../../dev-session/bootstrap';
 import {
   blockPanelDragClick,
   getPanelDragHandle,
@@ -72,6 +74,12 @@ function DialRootInner(props: DialRootProps) {
       setPanels(DialStore.getPanels());
     });
     onCleanup(unsub);
+  });
+
+  createEffect(() => {
+    if (!devSessionEnabled()) return;
+    const cleanHost = bootstrapDevSession({ projectKey: projectKey() });
+    onCleanup(cleanHost);
   });
 
   createEffect(() => {
@@ -187,23 +195,27 @@ function DialRootInner(props: DialRootProps) {
   const content = () => (
     <ShortcutListener>
       <div class="dialkit-root" data-mode={props.mode ?? 'popover'} data-theme={props.theme ?? 'system'}>
-        <div
-          ref={panelRef}
-          class="dialkit-panel"
-          data-position={inline() ? undefined : (dragOffset() ? undefined : activePosition())}
-          data-origin-x={inline() ? undefined : getPanelOriginX(activePosition(), dragOffset())}
-          data-mode={props.mode ?? 'popover'}
-          data-multiple={panels().length > 1 ? 'true' : undefined}
-          style={dragStyle()}
-          onPointerDown={!inline() ? handlePointerDown : undefined}
-          onPointerMove={!inline() ? handlePointerMove : undefined}
-          onPointerUp={!inline() ? handlePointerUp : undefined}
-          onPointerCancel={!inline() ? handlePointerUp : undefined}
-        >
-          <Show
-            when={panels().length > 1}
-            fallback={
-              <>
+        <Show when={devSessionEnabled()}>
+          <AnnotationToolbar projectKey={projectKey()} />
+        </Show>
+        {/* With the vertical tool chrome, dials stay closed until the Dial tool opens them. */}
+        <Show when={panels().length > 0 && (!devSessionEnabled() || dialsOpen())}>
+          <div
+            ref={panelRef}
+            class="dialkit-panel"
+            data-position={inline() ? undefined : (dragOffset() ? undefined : activePosition())}
+            data-origin-x={inline() ? undefined : getPanelOriginX(activePosition(), dragOffset())}
+            data-mode={props.mode ?? 'popover'}
+            data-multiple={panels().length > 1 ? 'true' : undefined}
+            style={dragStyle()}
+            onPointerDown={!inline() ? handlePointerDown : undefined}
+            onPointerMove={!inline() ? handlePointerMove : undefined}
+            onPointerUp={!inline() ? handlePointerUp : undefined}
+            onPointerCancel={!inline() ? handlePointerUp : undefined}
+          >
+            <Show
+              when={panels().length > 1}
+              fallback={
                 <For each={panels()}>
                   {(panel) => (
                     <Panel
@@ -214,41 +226,31 @@ function DialRootInner(props: DialRootProps) {
                     />
                   )}
                 </For>
-                <Show when={devSessionEnabled()}>
-                  <DevSessionNotes
-                    projectKey={projectKey()}
-                    defaultOpen={inline() || (props.defaultOpen ?? true)}
-                    inline={inline()}
-                  />
-                </Show>
-              </>
-            }
-          >
-            <div class="dialkit-panel-wrapper">
-              <Folder
-                title="DialKit"
-                defaultOpen={inline() || (props.defaultOpen ?? true)}
-                isRoot={true}
-                inline={inline()}
-                onOpenChange={handleRootOpenChange}
-                panelHeightOffset={2}
-              >
-                <For each={panels()}>
-                  {(panel) => (
-                    <Panel
-                      panel={panel}
-                      defaultOpen={true}
-                      variant="section"
-                    />
-                  )}
-                </For>
-                <Show when={devSessionEnabled()}>
-                  <DevSessionNotes projectKey={projectKey()} defaultOpen={true} inline={inline()} />
-                </Show>
-              </Folder>
-            </div>
-          </Show>
-        </div>
+              }
+            >
+              <div class="dialkit-panel-wrapper">
+                <Folder
+                  title="DialKit"
+                  defaultOpen={inline() || (props.defaultOpen ?? true)}
+                  isRoot={true}
+                  inline={inline()}
+                  onOpenChange={handleRootOpenChange}
+                  panelHeightOffset={2}
+                >
+                  <For each={panels()}>
+                    {(panel) => (
+                      <Panel
+                        panel={panel}
+                        defaultOpen={true}
+                        variant="section"
+                      />
+                    )}
+                  </For>
+                </Folder>
+              </div>
+            </Show>
+          </div>
+        </Show>
       </div>
     </ShortcutListener>
   );

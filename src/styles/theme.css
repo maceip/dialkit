@@ -1597,7 +1597,15 @@
   font-size: 12px;
 }
 
-.dialkit-dev-context-menu {
+/* Author `display` must not override the HTML hidden attribute, or the menu
+   stays visible/inert after dismiss (can't click, Escape, or click-away). */
+.dialkit-dev-context-menu[hidden],
+.dialkit-dev-note-composer[hidden],
+.dialkit-dev-css-panel[hidden] {
+  display: none !important;
+}
+
+.dialkit-dev-context-menu:not([hidden]) {
   padding: 6px;
   display: flex;
   flex-direction: column;
