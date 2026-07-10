@@ -13,6 +13,7 @@ extension/styles.css
 src/**/*.d.ts
 src/**/*.d.ts.map
 !src/svelte/shims.d.ts
+!src/annotation/scss.d.ts
 src/svelte/theme-css.ts
 
 # IDE
