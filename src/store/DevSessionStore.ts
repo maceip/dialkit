@@ -17,7 +17,6 @@ export interface DevNote {
   id: string;
   createdAt: string;
   updatedAt: string;
-  annotationId?: string;
   comment: string;
   status: 'open' | 'done';
   pagePath: string;
@@ -161,7 +160,6 @@ class DevSessionStoreImpl {
   }
 
   addNote(input: {
-    annotationId?: string;
     comment: string;
     target?: ElementInfo | null;
     panelId?: string;
@@ -180,7 +178,6 @@ class DevSessionStoreImpl {
       id: uid(),
       createdAt: now,
       updatedAt: now,
-      annotationId: input.annotationId,
       comment: input.comment.trim(),
       status: 'open',
       pagePath: typeof location !== 'undefined' ? location.pathname : '',
@@ -317,51 +314,18 @@ class DevSessionStoreImpl {
   }
 
   buildAgentReport(options?: { includeDoneNotes?: boolean }): string {
-    const includeDone = options?.includeDoneNotes ?? false;
-    const notes = this.getNotes().filter((n) => !n.exportedAt && (includeDone || n.status === 'open'));
+    void options;
     const changes = this.getPendingChanges();
     const cssOverrides = this.getPendingCssOverrides();
     const panels = DialStore.getPanels();
 
-    const lines: string[] = ['# DialKit dev session', ''];
+    const lines: string[] = ['# DialKit session appendix', ''];
     lines.push(`**Project:** ${this.projectKey}`);
     lines.push(`**Page:** ${typeof location !== 'undefined' ? location.href : ''}`);
     lines.push(`**Generated:** ${new Date().toISOString()}`);
     lines.push('');
-
-    if (notes.length) {
-      lines.push('## Notes');
-      lines.push('');
-      for (const note of notes) {
-        lines.push(`### ${note.reactComponent ?? note.element ?? 'UI note'} (${note.status})`);
-        if (note.selector) lines.push(`- **Selector:** \`${note.selector}\``);
-        if (note.dialkitId) lines.push(`- **DialKit ID:** \`${note.dialkitId}\``);
-        if (note.source?.file) {
-          const loc = [note.source.file, note.source.line, note.source.column].filter((v) => v !== undefined).join(':');
-          lines.push(`- **Source:** \`${loc}\``);
-        }
-        if (note.reactComponent) lines.push(`- **Component:** \`${note.reactComponent}\``);
-        if (note.reactStack?.length) {
-          lines.push(`- **Stack:** ${note.reactStack.map((n) => `\`${n}\``).join(' → ')}`);
-        }
-        if (note.panelName) lines.push(`- **Dial panel:** ${note.panelName}`);
-        if (note.screenshotDataUrl) lines.push(`- **Screenshot:** (embedded below)`);
-        lines.push('');
-        lines.push(note.comment || '(no comment)');
-        if (note.replies?.length) {
-          lines.push('');
-          lines.push('**Replies:**');
-          for (const reply of note.replies) {
-            lines.push(`- ${reply.author ? `**${reply.author}:** ` : ''}${reply.body}`);
-          }
-        }
-        if (note.screenshotDataUrl) {
-          lines.push('');
-          lines.push(`![screenshot](${note.screenshotDataUrl})`);
-        }
-        lines.push('');
-      }
-    }
+    lines.push('_Page annotations are copied from the annotation toolbar. This appendix covers dial + CSS edits._');
+    lines.push('');
 
     const cssPatch = buildCssPatch(cssOverrides);
     if (cssPatch.trim()) {
@@ -426,8 +390,8 @@ class DevSessionStoreImpl {
       }
     }
 
-    if (!notes.length && !changes.length && !cssOverrides.length) {
-      lines.push('_No pending notes, CSS overrides, or parameter changes._');
+    if (!changes.length && !cssOverrides.length) {
+      lines.push('_No pending CSS overrides or parameter changes._');
     }
 
     return lines.join('\n');

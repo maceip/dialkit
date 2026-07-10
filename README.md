@@ -876,21 +876,12 @@ Return values are fully typed: `params.blur` infers as `number`, `params.color` 
 
 ---
 
-## Dev session (agent notes + live CSS editing)
+## Dev session (annotation toolbar + live CSS / dial tools)
 
-Enable a VisBug-style review layer: right-click any element to leave agent notes, edit CSS inline, open dynamic dial panels, and export markdown/JSON for agents.
-
-With `devSession` enabled, DialKit also mounts a local page-annotation toolbar (UI adapted from [Agentation](https://github.com/benjitaylor/agentation)): click elements, select text, multi-select, and copy structured feedback. Annotations persist in **browser localStorage** and mirror into DialKit’s local `DevSessionStore`. Hosted annotation storage, MCP cloud sync, webhooks, and telemetry from upstream are **not** included.
+Enable the local-only annotation toolbar (click / text / multi / area select, markers, markdown copy, animation freeze) plus a slim right-click tool host for CSS editing, element dial panels, and move.
 
 ```tsx
 <DialRoot devSession={{ projectKey: 'my-app' }} />
-```
-
-```tsx
-import { AnnotationToolbar } from 'dialkit';
-
-// Standalone local-only toolbar (same storage bridge)
-<AnnotationToolbar projectKey="my-app" />
 ```
 
 ```tsx
@@ -906,15 +897,19 @@ function Card() {
 }
 ```
 
-**Right-click menu:** notes · styles · dial panel · measure · move · align
+**Annotation toolbar:** floating UI for page feedback. Annotations persist in `localStorage` under `dialkit:annotations:v1:${projectKey}:${pathname}`. No MCP / HTTP sync in this release — copy markdown from the toolbar for agents.
 
-**Dynamic dial panels:** picked elements get a full DialKit panel (sliders/colors) wired to live CSS.
+**Right-click menu:** Edit styles · Open dial panel · Move
 
-**Exports:** markdown agent report (with CSS patch + optional screenshot) and JSON session sync.
+**Dynamic dial panels:** picked elements get a DialKit panel (sliders/colors) wired to live CSS.
 
-**Extension:** build with `npm run build:extension`, then load the `extension/` folder unpacked in Chrome. See [extension/README.md](extension/README.md).
+**Exports:** toolbar markdown for annotations; `DevSessionStore.copyAgentReport()` for CSS patch + dial change appendix.
 
-**Query param:** `?dialkit-dev=1&dialkit-project=my-app`
+**Frameworks:** annotation toolbar is React-first (mounted from React `DialRoot`). Solid / Vue / Svelte `devSession` still mounts the slim CSS/dial/move host; use React `DialRoot` or `mountAnnotationToolbar()` when you need annotations in those apps.
+
+**Extension:** deferred this sprint — see [extension/NEXT-SPRINT.md](extension/NEXT-SPRINT.md). Inject is a stub so package builds keep passing.
+
+**Browser e2e:** `npm run test:e2e` runs Playwright against the example demo — annotate+persist, CSS inspector, element dial panel, and Move tool.
 
 ---
 

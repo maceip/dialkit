@@ -6,11 +6,20 @@ export { useDevDialKit, useDevDialKitController } from './hooks/useDevDialKit';
 // Root component (user mounts once)
 export { DialRoot } from './components/DialRoot';
 export type { DialPosition, DialMode, DialTheme } from './components/DialRoot';
-export { FeedbackPanel } from './components/FeedbackPanel';
 export { AnnotationToolbar } from './components/AnnotationToolbar';
 export type { AnnotationToolbarProps } from './components/AnnotationToolbar';
+export { mountAnnotationToolbar } from './annotation/mount';
+export type { Annotation } from './annotation';
+export {
+  loadAnnotations,
+  saveAnnotations,
+  getStorageKey,
+  setAnnotationProjectKey,
+  migrateDevSessionNotes,
+  generateOutput,
+} from './annotation';
 
-// Dev session (notes + change queue for agents)
+// Dev session (CSS/dial change queue + slim tool host)
 export { DevSessionStore } from './store/DevSessionStore';
 export type { DevNote, DialChangeEntry, CssOverrideEntry } from './store/DevSessionStore';
 export { inspectElement, cssPath } from './utils/dom-inspect';
@@ -21,7 +30,6 @@ export { dialkitTarget, formatSourceMeta, parseSourceMeta } from './utils/dialki
 export type { DialKitSourceMeta, DialKitTargetProps } from './utils/dialkit-target';
 export type { NoteReply } from './store/DevSessionStore';
 export { bootstrapDevSession } from './dev-session/bootstrap';
-export { mountAgentNotesPanel } from './dev-session/feedback-mount';
 export { matchPanelForTarget } from './dev-session/panel-link';
 export { CSS_INSPECTOR_PROPERTIES, applyCssOverride, readCssValues } from './dev-session/css-inspector';
 
@@ -63,7 +71,3 @@ export type {
   DialChangeEvent,
   PanelConfig,
 } from './store/DialStore';
-
-// Page annotation toolbar (local-only Agentation UI)
-export { Agentation, PageFeedbackToolbarCSS } from './annotation';
-export type { Annotation, AgentationProps, DemoAnnotation } from './annotation';

@@ -10,7 +10,7 @@
   background-color: #fff;
   transition: background-color 0.2s ease;
 
-  [data-agentation-theme="dark"] & {
+  [data-dialkit-annotation-theme="dark"] & {
     border-color: rgb(255 255 255 / 0.2);
     background-color: #252525;
   }
@@ -18,7 +18,7 @@
   &:has(.checkboxInput:checked) {
     background-color: #1a1a1a;
 
-    [data-agentation-theme="dark"] & {
+    [data-dialkit-annotation-theme="dark"] & {
       background-color: #fff;
     }
   }
@@ -36,7 +36,7 @@
 .checkboxCheck {
   color: #fafafa;
 
-  [data-agentation-theme="dark"] & {
+  [data-dialkit-annotation-theme="dark"] & {
     color: #1a1a1a;
   }
 }
@@ -47,7 +47,7 @@
   color: #fafafa;
   transition: stroke-dashoffset 0.1s ease;
 
-  [data-agentation-theme="dark"] & {
+  [data-dialkit-annotation-theme="dark"] & {
     color: #1a1a1a;
   }
 

@@ -1,8 +1,7 @@
-import {
-  OutputDetailLevel,
-  ReactComponentMode,
-} from "../components/page-toolbar-css";
+import type { OutputDetailLevel, ReactComponentMode } from "../output-types";
 import { Annotation } from "../types";
+
+export type { OutputDetailLevel, ReactComponentMode } from "../output-types";
 
 export const OUTPUT_TO_REACT_MODE: Record<
   OutputDetailLevel,

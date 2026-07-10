@@ -1,63 +1,6 @@
 import { parseTranslate, applyTranslate } from './transform-utils';
 
-export interface MeasureOverlay {
-  el: HTMLDivElement;
-  cleanup: () => void;
-}
-
-export function showMeasureOverlay(target: HTMLElement): MeasureOverlay {
-  const rect = target.getBoundingClientRect();
-  const el = document.createElement('div');
-  el.className = 'dialkit-dev-measure';
-  el.innerHTML = `
-    <span>${Math.round(rect.width)} × ${Math.round(rect.height)}</span>
-    <span>${Math.round(rect.x)}, ${Math.round(rect.y)}</span>
-  `;
-  el.style.left = `${rect.left}px`;
-  el.style.top = `${rect.top}px`;
-  el.style.width = `${rect.width}px`;
-  el.style.height = `${rect.height}px`;
-  document.body.appendChild(el);
-
-  const onScroll = () => {
-    const r = target.getBoundingClientRect();
-    el.style.left = `${r.left}px`;
-    el.style.top = `${r.top}px`;
-    el.style.width = `${r.width}px`;
-    el.style.height = `${r.height}px`;
-    const spans = el.querySelectorAll('span');
-    if (spans[0]) spans[0].textContent = `${Math.round(r.width)} × ${Math.round(r.height)}`;
-    if (spans[1]) spans[1].textContent = `${Math.round(r.x)}, ${Math.round(r.y)}`;
-  };
-
-  window.addEventListener('scroll', onScroll, true);
-  window.addEventListener('resize', onScroll);
-
-  return {
-    el,
-    cleanup: () => {
-      window.removeEventListener('scroll', onScroll, true);
-      window.removeEventListener('resize', onScroll);
-      el.remove();
-    },
-  };
-}
-
 export { parseTranslate, applyTranslate };
-
-export function alignElement(el: HTMLElement, alignment: 'left' | 'center' | 'right'): void {
-  if (alignment === 'left') {
-    el.style.marginLeft = '0';
-    el.style.marginRight = 'auto';
-  } else if (alignment === 'center') {
-    el.style.marginLeft = 'auto';
-    el.style.marginRight = 'auto';
-  } else {
-    el.style.marginLeft = 'auto';
-    el.style.marginRight = '0';
-  }
-  el.style.display = el.style.display || 'block';
-}
 
 export class MoveTool {
   private target: HTMLElement | null = null;

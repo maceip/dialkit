@@ -11,12 +11,12 @@
     background-color 0.15s,
     opacity 0.15s;
 
-  [data-agentation-theme="dark"] & {
+  [data-dialkit-annotation-theme="dark"] & {
     background-color: #484848;
   }
 
   &:has(.switchInput:checked) {
-    background-color: var(--agentation-color-blue);
+    background-color: var(--dialkit-annotation-color-blue);
   }
 
   &:has(.switchInput:disabled) {

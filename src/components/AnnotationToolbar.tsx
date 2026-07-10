@@ -1,63 +1,30 @@
-import { useEffect } from 'react';
 import {
-  PageFeedbackToolbarCSS,
-  type AgentationProps,
-} from '../annotation/components/page-toolbar-css';
-import {
-  removeAnnotationFromDevSession,
-  syncAnnotationToDevSession,
-  syncAnnotationUpdateToDevSession,
-} from '../annotation/bridge-dev-session';
-import { DevSessionStore } from '../store/DevSessionStore';
+  AnnotationToolbar as Toolbar,
+  migrateDevSessionNotes,
+  setAnnotationProjectKey,
+} from '../annotation';
+import type { Annotation } from '../annotation';
 
-export type AnnotationToolbarProps = AgentationProps & {
+export interface AnnotationToolbarProps {
   projectKey?: string;
-  /** When true (default), mirror annotations into DevSessionStore local notes. */
-  syncToDevSession?: boolean;
-};
+  onAnnotationAdd?: (annotation: Annotation) => void;
+  onAnnotationDelete?: (annotation: Annotation) => void;
+  onAnnotationUpdate?: (annotation: Annotation) => void;
+  onAnnotationsClear?: (annotations: Annotation[]) => void;
+  onCopy?: (markdown: string) => void;
+  onSubmit?: (output: string, annotations: Annotation[]) => void;
+}
 
-/**
- * Page annotation toolbar (Agentation UI) wired to DialKit local storage.
- * Hosted sync / webhooks / telemetry are not available.
- */
+/** DialKit wrapper: scopes storage by projectKey before the toolbar mounts. */
 export function AnnotationToolbar({
   projectKey = 'default',
-  syncToDevSession = true,
-  onAnnotationAdd,
-  onAnnotationUpdate,
-  onAnnotationDelete,
-  onAnnotationsClear,
-  ...rest
+  ...callbacks
 }: AnnotationToolbarProps) {
-  useEffect(() => {
-    if (syncToDevSession) {
-      DevSessionStore.configure(projectKey);
-    }
-  }, [projectKey, syncToDevSession]);
+  // Must run during render (not useEffect) so the first load/save uses the right key.
+  setAnnotationProjectKey(projectKey);
+  if (typeof window !== 'undefined') {
+    migrateDevSessionNotes(projectKey);
+  }
 
-  return (
-    <PageFeedbackToolbarCSS
-      {...rest}
-      onAnnotationAdd={(annotation) => {
-        if (syncToDevSession) syncAnnotationToDevSession(annotation, projectKey);
-        onAnnotationAdd?.(annotation);
-      }}
-      onAnnotationUpdate={(annotation) => {
-        if (syncToDevSession) syncAnnotationUpdateToDevSession(annotation, projectKey);
-        onAnnotationUpdate?.(annotation);
-      }}
-      onAnnotationDelete={(annotation) => {
-        if (syncToDevSession) removeAnnotationFromDevSession(annotation, projectKey);
-        onAnnotationDelete?.(annotation);
-      }}
-      onAnnotationsClear={(annotations) => {
-        if (syncToDevSession) {
-          for (const annotation of annotations) {
-            removeAnnotationFromDevSession(annotation, projectKey);
-          }
-        }
-        onAnnotationsClear?.(annotations);
-      }}
-    />
-  );
+  return <Toolbar copyToClipboard {...callbacks} />;
 }

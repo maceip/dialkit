@@ -26,8 +26,7 @@
     "src/store/**/*",
     "src/annotation/**/*",
     "src/dev-session/**/*",
-    "src/utils/**/*",
-    "src/inject/**/*"
+    "src/utils/**/*"
   ],
   "exclude": ["node_modules", "dist", "example"]
 }

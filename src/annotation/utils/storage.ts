@@ -1,23 +1,31 @@
 // =============================================================================
-// Local-only annotation storage (DialKit)
+// DialKit annotation storage (local-only, vendored Agentation shape)
 // =============================================================================
-//
-// Annotations persist in browser localStorage under dialkit-prefixed keys.
-// Hosted / MCP / cloud sync paths from upstream Agentation are intentionally
-// omitted — use DevSessionStore for project-scoped agent notes.
-//
 
-import type { Annotation } from "../types";
+import type { Annotation } from '../types';
 
-const STORAGE_PREFIX = "dialkit:annotations:";
-const DEFAULT_RETENTION_DAYS = 30;
+const STORAGE_VERSION = 1;
+const STORAGE_PREFIX = `dialkit:annotations:v${STORAGE_VERSION}:`;
+const DEFAULT_RETENTION_DAYS = 7;
+const TOOLBAR_HIDDEN_SESSION_KEY = 'dialkit:annotations:toolbar-hidden';
 
-export function getStorageKey(pathname: string): string {
-  return `${STORAGE_PREFIX}${pathname}`;
+let activeProjectKey = 'default';
+
+/** Scope annotation localStorage keys by DialKit projectKey. */
+export function setAnnotationProjectKey(projectKey: string): void {
+  activeProjectKey = projectKey || 'default';
+}
+
+export function getAnnotationProjectKey(): string {
+  return activeProjectKey;
+}
+
+export function getStorageKey(pathname: string, projectKey = activeProjectKey): string {
+  return `${STORAGE_PREFIX}${projectKey}:${pathname}`;
 }
 
 export function loadAnnotations<T = Annotation>(pathname: string): T[] {
-  if (typeof window === "undefined") return [];
+  if (typeof window === 'undefined') return [];
   try {
     const stored = localStorage.getItem(getStorageKey(pathname));
     if (!stored) return [];
@@ -30,7 +38,7 @@ export function loadAnnotations<T = Annotation>(pathname: string): T[] {
 }
 
 export function saveAnnotations<T = Annotation>(pathname: string, annotations: T[]): void {
-  if (typeof window === "undefined") return;
+  if (typeof window === 'undefined') return;
   try {
     localStorage.setItem(getStorageKey(pathname), JSON.stringify(annotations));
   } catch {
@@ -39,7 +47,7 @@ export function saveAnnotations<T = Annotation>(pathname: string, annotations: T
 }
 
 export function clearAnnotations(pathname: string): void {
-  if (typeof window === "undefined") return;
+  if (typeof window === 'undefined') return;
   try {
     localStorage.removeItem(getStorageKey(pathname));
   } catch {
@@ -48,30 +56,27 @@ export function clearAnnotations(pathname: string): void {
 }
 
 /**
- * Load all annotations from localStorage across all pages.
+ * Load all annotations from localStorage for the active project.
  * Returns a map of pathname -> annotations.
  */
 export function loadAllAnnotations<T = Annotation>(): Map<string, T[]> {
   const result = new Map<string, T[]>();
-  if (typeof window === "undefined") return result;
+  if (typeof window === 'undefined') return result;
 
   try {
+    const projectPrefix = `${STORAGE_PREFIX}${activeProjectKey}:`;
     const cutoff = Date.now() - DEFAULT_RETENTION_DAYS * 24 * 60 * 60 * 1000;
     for (let i = 0; i < localStorage.length; i++) {
       const key = localStorage.key(i);
-      if (key?.startsWith(STORAGE_PREFIX)) {
-        const pathname = key.slice(STORAGE_PREFIX.length);
-        const stored = localStorage.getItem(key);
-        if (stored) {
-          const data = JSON.parse(stored);
-          const filtered = data.filter(
-            (a: { timestamp?: number }) => !a.timestamp || a.timestamp > cutoff
-          );
-          if (filtered.length > 0) {
-            result.set(pathname, filtered);
-          }
-        }
-      }
+      if (!key?.startsWith(projectPrefix)) continue;
+      const pathname = key.slice(projectPrefix.length);
+      const stored = localStorage.getItem(key);
+      if (!stored) continue;
+      const data = JSON.parse(stored);
+      const filtered = data.filter(
+        (a: { timestamp?: number }) => !a.timestamp || a.timestamp > cutoff,
+      );
+      if (filtered.length > 0) result.set(pathname, filtered);
     }
   } catch {
     // ignore errors
@@ -80,135 +85,131 @@ export function loadAllAnnotations<T = Annotation>(): Map<string, T[]> {
   return result;
 }
 
-// =============================================================================
-// Layout Mode Storage
-// =============================================================================
+// Sync-marker helpers kept as no-ops / locals for toolbar API compatibility.
+type AnnotationWithSyncMarker = Annotation & { _syncedTo?: string };
 
-const DESIGN_PREFIX = "dialkit:annotation-design:";
-
-export function loadDesignPlacements<T = unknown>(pathname: string): T[] {
-  if (typeof window === "undefined") return [];
-  try {
-    const stored = localStorage.getItem(`${DESIGN_PREFIX}${pathname}`);
-    if (!stored) return [];
-    return JSON.parse(stored);
-  } catch {
-    return [];
-  }
+export function saveAnnotationsWithSyncMarker(
+  pathname: string,
+  annotations: Annotation[],
+  _sessionId: string,
+): void {
+  saveAnnotations(pathname, annotations);
 }
 
-export function saveDesignPlacements<T = unknown>(pathname: string, placements: T[]): void {
-  if (typeof window === "undefined") return;
-  try {
-    localStorage.setItem(`${DESIGN_PREFIX}${pathname}`, JSON.stringify(placements));
-  } catch {
-    // localStorage might be full or disabled
-  }
+export function getUnsyncedAnnotations(pathname: string, _sessionId?: string): Annotation[] {
+  return loadAnnotations<AnnotationWithSyncMarker>(pathname);
 }
 
-export function clearDesignPlacements(pathname: string): void {
-  if (typeof window === "undefined") return;
-  try {
-    localStorage.removeItem(`${DESIGN_PREFIX}${pathname}`);
-  } catch {
-    // ignore
-  }
+export function clearSyncMarkers(pathname: string): void {
+  const annotations = loadAnnotations<AnnotationWithSyncMarker>(pathname);
+  const cleaned = annotations.map((annotation) => {
+    const { _syncedTo: _drop, ...rest } = annotation;
+    return rest as Annotation;
+  });
+  saveAnnotations(pathname, cleaned);
 }
 
-// =============================================================================
-// Rearrange Mode Storage
-// =============================================================================
-
-const REARRANGE_PREFIX = "dialkit:annotation-rearrange:";
-
-export function loadRearrangeState<T = unknown>(pathname: string): T | null {
-  if (typeof window === "undefined") return null;
-  try {
-    const stored = localStorage.getItem(`${REARRANGE_PREFIX}${pathname}`);
-    if (!stored) return null;
-    return JSON.parse(stored);
-  } catch {
-    return null;
-  }
+// Design / rearrange / wireframe — stubs (not used; design-mode disabled)
+export function loadDesignPlacements<T = unknown>(_pathname: string): T[] {
+  return [];
 }
-
-export function saveRearrangeState<T = unknown>(pathname: string, state: T): void {
-  if (typeof window === "undefined") return;
-  try {
-    localStorage.setItem(`${REARRANGE_PREFIX}${pathname}`, JSON.stringify(state));
-  } catch {
-    // localStorage might be full or disabled
-  }
+export function saveDesignPlacements<T = unknown>(_pathname: string, _placements: T[]): void {}
+export function clearDesignPlacements(_pathname: string): void {}
+export function loadRearrangeState<T = unknown>(_pathname: string): T | null {
+  return null;
 }
-
-export function clearRearrangeState(pathname: string): void {
-  if (typeof window === "undefined") return;
-  try {
-    localStorage.removeItem(`${REARRANGE_PREFIX}${pathname}`);
-  } catch {
-    // ignore
-  }
+export function saveRearrangeState<T = unknown>(_pathname: string, _state: T): void {}
+export function clearRearrangeState(_pathname: string): void {}
+export function loadWireframeState<T = unknown>(
+  _pathname: string,
+): { rearrange: T | null; placements: unknown[]; purpose: string } | null {
+  return null;
 }
+export function saveWireframeState(
+  _pathname: string,
+  _state: { rearrange: unknown; placements: unknown[]; purpose: string },
+): void {}
+export function clearWireframeState(_pathname: string): void {}
 
-// =============================================================================
-// Wireframe Storage (persists wireframe state across page refresh)
-// =============================================================================
-
-const WIREFRAME_PREFIX = "dialkit:annotation-wireframe:";
-
-export function loadWireframeState<T = unknown>(pathname: string): { rearrange: T | null; placements: unknown[]; purpose: string } | null {
-  if (typeof window === "undefined") return null;
-  try {
-    const stored = localStorage.getItem(`${WIREFRAME_PREFIX}${pathname}`);
-    if (!stored) return null;
-    return JSON.parse(stored);
-  } catch {
-    return null;
-  }
+// Session ids unused without sync — keep API so toolbar imports compile
+export function getSessionStorageKey(pathname: string): string {
+  return `${STORAGE_PREFIX}session:${activeProjectKey}:${pathname}`;
 }
-
-export function saveWireframeState(pathname: string, state: { rearrange: unknown; placements: unknown[]; purpose: string }): void {
-  if (typeof window === "undefined") return;
-  try {
-    localStorage.setItem(`${WIREFRAME_PREFIX}${pathname}`, JSON.stringify(state));
-  } catch {
-    // localStorage might be full or disabled
-  }
+export function loadSessionId(_pathname: string): string | null {
+  return null;
 }
-
-export function clearWireframeState(pathname: string): void {
-  if (typeof window === "undefined") return;
-  try {
-    localStorage.removeItem(`${WIREFRAME_PREFIX}${pathname}`);
-  } catch {
-    // ignore
-  }
-}
-
-// =============================================================================
-// Toolbar Visibility (per-tab session)
-// =============================================================================
-
-const TOOLBAR_HIDDEN_SESSION_KEY = "dialkit:annotation-toolbar-hidden";
+export function saveSessionId(_pathname: string, _sessionId: string): void {}
+export function clearSessionId(_pathname: string): void {}
 
 export function loadToolbarHidden(): boolean {
-  if (typeof window === "undefined") return false;
+  if (typeof window === 'undefined') return false;
   try {
-    return sessionStorage.getItem(TOOLBAR_HIDDEN_SESSION_KEY) === "1";
+    return sessionStorage.getItem(TOOLBAR_HIDDEN_SESSION_KEY) === '1';
   } catch {
     return false;
   }
 }
 
 export function saveToolbarHidden(hidden: boolean): void {
-  if (typeof window === "undefined") return;
+  if (typeof window === 'undefined') return;
   try {
-    if (hidden) {
-      sessionStorage.setItem(TOOLBAR_HIDDEN_SESSION_KEY, "1");
-    } else {
-      sessionStorage.removeItem(TOOLBAR_HIDDEN_SESSION_KEY);
-    }
+    if (hidden) sessionStorage.setItem(TOOLBAR_HIDDEN_SESSION_KEY, '1');
+    else sessionStorage.removeItem(TOOLBAR_HIDDEN_SESSION_KEY);
   } catch {
     // ignore
+  }
+}
+
+/**
+ * One-shot migration from DialKit DevSession notes (v2) into annotation storage.
+ */
+export function migrateDevSessionNotes(projectKey: string): void {
+  if (typeof window === 'undefined') return;
+  const legacyKey = `dialkit:dev-session:v2:${projectKey}`;
+  const flagKey = `dialkit:annotations:migrated:${projectKey}`;
+  try {
+    if (localStorage.getItem(flagKey) === '1') return;
+    const raw = localStorage.getItem(legacyKey);
+    if (!raw) {
+      localStorage.setItem(flagKey, '1');
+      return;
+    }
+    const parsed = JSON.parse(raw) as {
+      notes?: Array<{
+        id: string;
+        comment: string;
+        pagePath?: string;
+        selector?: string;
+        element?: string;
+        createdAt?: string;
+        reactComponent?: string | null;
+      }>;
+    };
+    const byPath = new Map<string, Annotation[]>();
+    for (const note of parsed.notes ?? []) {
+      const pathname = note.pagePath || '/';
+      const list = byPath.get(pathname) ?? [];
+      list.push({
+        id: note.id,
+        x: 50,
+        y: 120,
+        comment: note.comment || '',
+        element: note.element || note.reactComponent || 'Element',
+        elementPath: note.selector || '',
+        timestamp: note.createdAt ? Date.parse(note.createdAt) || Date.now() : Date.now(),
+        reactComponents: note.reactComponent ?? undefined,
+      });
+      byPath.set(pathname, list);
+    }
+    const prevKey = activeProjectKey;
+    setAnnotationProjectKey(projectKey);
+    for (const [pathname, annotations] of byPath) {
+      const existing = loadAnnotations(pathname);
+      saveAnnotations(pathname, [...existing, ...annotations]);
+    }
+    setAnnotationProjectKey(prevKey);
+    localStorage.setItem(flagKey, '1');
+  } catch {
+    // ignore migration failures
   }
 }

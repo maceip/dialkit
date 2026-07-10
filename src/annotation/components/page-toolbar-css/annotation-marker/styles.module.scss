@@ -46,7 +46,7 @@
   position: absolute;
   width: 22px;
   height: 22px;
-  background: var(--agentation-color-blue);
+  background: var(--dialkit-annotation-color-blue);
   color: white;
   border-radius: 50%;
   display: flex;
@@ -95,7 +95,7 @@
 
   &.pending {
     position: fixed;
-    background-color: var(--agentation-color-blue);
+    background-color: var(--dialkit-annotation-color-blue);
     cursor: default;
   }
 
@@ -104,19 +104,19 @@
   }
 
   &.multiSelect {
-    background-color: var(--agentation-color-green);
+    background-color: var(--dialkit-annotation-color-green);
     width: 26px;
     height: 26px;
     border-radius: 6px;
     font-size: 0.75rem;
 
     &.pending {
-      background-color: var(--agentation-color-green);
+      background-color: var(--dialkit-annotation-color-green);
     }
   }
 
   &.hovered {
-    background-color: var(--agentation-color-red);
+    background-color: var(--dialkit-annotation-color-red);
   }
 }
 
@@ -181,7 +181,7 @@
 }
 
 // Light mode overrides
-[data-agentation-theme="light"] {
+[data-dialkit-annotation-theme="light"] {
   .markerTooltip {
     background: #fff;
     box-shadow:

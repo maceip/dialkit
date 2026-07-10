@@ -13,7 +13,7 @@
 
 // Exclude selectors — agentation UI elements should never be frozen
 const EXCLUDE_ATTRS = [
-  "data-feedback-toolbar",
+  "data-dialkit-annotation-toolbar",
   "data-annotation-popup",
   "data-annotation-marker",
 ];
@@ -22,7 +22,7 @@ const NOT_SELECTORS = EXCLUDE_ATTRS
   .join("");
 
 const STYLE_ID = "feedback-freeze-styles";
-const STATE_KEY = "__agentation_freeze";
+const STATE_KEY = "__dialkit_annotation_freeze";
 
 // ---------------------------------------------------------------------------
 // Shared mutable state on window (survives HMR module re-execution)
@@ -223,7 +223,7 @@ export function unfreeze(): void {
       try {
         cb();
       } catch (e) {
-        console.warn("[agentation] Error replaying queued timeout:", e);
+        console.warn("[dialkit-annotation] Error replaying queued timeout:", e);
       }
     }, 0);
   }
@@ -248,7 +248,7 @@ export function unfreeze(): void {
     try {
       anim.play();
     } catch (e) {
-      console.warn("[agentation] Error resuming animation:", e);
+      console.warn("[dialkit-annotation] Error resuming animation:", e);
     }
   }
   _s.pausedAnimations = [];

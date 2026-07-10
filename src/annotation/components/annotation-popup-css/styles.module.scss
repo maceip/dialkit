@@ -247,11 +247,11 @@
   transition: border-color 0.15s ease;
 
   &:focus {
-    border-color: var(--agentation-color-blue);
+    border-color: var(--dialkit-annotation-color-blue);
   }
 
   &.green:focus {
-    border-color: var(--agentation-color-green);
+    border-color: var(--dialkit-annotation-color-green);
   }
 
   &::placeholder {
@@ -343,10 +343,10 @@
   &:hover {
     background-color: color-mix(
       in srgb,
-      var(--agentation-color-red) 25%,
+      var(--dialkit-annotation-color-red) 25%,
       transparent
     );
-    color: var(--agentation-color-red);
+    color: var(--dialkit-annotation-color-red);
   }
 
   &:active {
@@ -428,10 +428,10 @@
     &:hover {
       background-color: color-mix(
         in srgb,
-        var(--agentation-color-red) 25%,
+        var(--dialkit-annotation-color-red) 25%,
         transparent
       );
-      color: var(--agentation-color-red);
+      color: var(--dialkit-annotation-color-red);
     }
   }
 }

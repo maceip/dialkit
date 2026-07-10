@@ -1,5 +1,5 @@
 // =============================================================================
-// Shared Types (local-only DialKit annotations)
+// Shared Types
 // =============================================================================
 
 export type Annotation = {
@@ -51,7 +51,8 @@ export type Annotation = {
     currentRect: { x: number; y: number; width: number; height: number };
   };
 
-  // Local metadata (never sent to a hosted backend)
+  // Protocol fields (added when syncing to server)
+  sessionId?: string;
   url?: string;
   intent?: AnnotationIntent;
   severity?: AnnotationSeverity;
@@ -62,11 +63,42 @@ export type Annotation = {
   resolvedAt?: string;
   resolvedBy?: "human" | "agent";
   authorId?: string;
+
+  // Local-only sync tracking (not sent to server)
+  _syncedTo?: string; // Session ID this annotation was synced to
 };
+
+// -----------------------------------------------------------------------------
+// Annotation Enums
+// -----------------------------------------------------------------------------
 
 export type AnnotationIntent = "fix" | "change" | "question" | "approve";
 export type AnnotationSeverity = "blocking" | "important" | "suggestion";
 export type AnnotationStatus = "pending" | "acknowledged" | "resolved" | "dismissed";
+
+// -----------------------------------------------------------------------------
+// Session
+// -----------------------------------------------------------------------------
+
+export type Session = {
+  id: string;
+  url: string;
+  status: SessionStatus;
+  createdAt: string;
+  updatedAt?: string;
+  projectId?: string;
+  metadata?: Record<string, unknown>;
+};
+
+export type SessionStatus = "active" | "approved" | "closed";
+
+export type SessionWithAnnotations = Session & {
+  annotations: Annotation[];
+};
+
+// -----------------------------------------------------------------------------
+// Thread Messages
+// -----------------------------------------------------------------------------
 
 export type ThreadMessage = {
   id: string;
@@ -74,3 +106,4 @@ export type ThreadMessage = {
   content: string;
   timestamp: number;
 };
+

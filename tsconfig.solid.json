@@ -4,5 +4,6 @@
     "jsx": "preserve",
     "jsxImportSource": "solid-js"
   },
-  "include": ["src/solid/**/*", "src/store/**/*"]
+  "include": ["src/solid/**/*", "src/store/**/*", "src/annotation/**/*", "src/dev-session/**/*", "src/utils/**/*"]
 }
+

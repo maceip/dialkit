@@ -1,6 +1,7 @@
 # DialKit Chrome extension
 
-Dev session on any webpage: right-click elements to leave agent notes, edit CSS, and export markdown.
+> **Deferred this sprint.** Inject is a stub so package builds keep working.
+> See [NEXT-SPRINT.md](./NEXT-SPRINT.md) for the re-wire plan (DialRoot + annotation toolbar).
 
 ## Build
 
@@ -9,47 +10,16 @@ From the repo root:
 ```bash
 npm install
 npm run build:extension
-npm run verify:extension
 ```
 
-This copies `dist/inject/inject.js` and `dist/styles.css` into `extension/`. Both files are required before loading the extension.
+This copies `dist/inject/inject.js` and `dist/styles.css` into `extension/`.
 
-Icon masters live in `extension/assets/icon-dark.png` and `icon-light.png`. `npm run build:extension` generates all manifest sizes from those files.
+## Current inject behavior
 
-## Install (unpacked)
+`__DIALKIT__.mount()` logs that the extension is stubbed and does not mount UI.
 
-1. Open `chrome://extensions`
-2. Enable **Developer mode**
-3. Click **Load unpacked**
-4. Select this `extension/` folder
+Use the in-app path instead:
 
-## Use
-
-1. Click the DialKit toolbar icon
-2. Check **Enable on all pages**
-3. Set a **Project key** (groups notes in localStorage per project)
-4. On any page, right-click an element → **Leave note** or **Edit styles**
-5. Open the DialKit panel → **Agent notes** to review saved notes
-
-Toggle off removes the UI and listeners on the current tab without a full page refresh.
-
-## Troubleshooting
-
-| Problem | Fix |
-|---------|-----|
-| Extension loads but nothing appears | Run `npm run build:extension` first |
-| Toggle does nothing | Refresh the tab once after first install |
-| Notes missing after reload | Check the project key matches across sessions |
-| Panel hidden on production sites | Expected — extension passes `productionEnabled` automatically |
-
-## Architecture
-
+```tsx
+<DialRoot productionEnabled devSession={{ projectKey: 'my-app' }} />
 ```
-popup.js ──storage.sync──► content.js ──inject.js──► __DIALKIT__.mount()
-                              │
-                              └──► background.js (tab screenshots)
-```
-
-- **content.js** — isolated world bridge; injects page script once per tab
-- **inject.js** — page-world bundle with full `DialRoot` + dev session
-- **background.js** — `captureVisibleTab` for note screenshots

@@ -71,7 +71,7 @@ export const Tooltip = ({
       {shouldRender &&
         createPortal(
           <div
-            data-feedback-toolbar
+            data-dialkit-annotation-toolbar
             style={{
               position: "fixed",
               top: position.top,

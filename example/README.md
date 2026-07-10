@@ -19,9 +19,10 @@ After GitHub Pages deploys from `main`:
 
 https://maceip.github.io/dialkit/
 
-## Dev session smoke test
+## Annotation smoke test
 
 1. Open `/demo`
-2. Expand **Agent notes** in the DialKit panel
-3. Type a note, click **Tag element**, click the page title, **Save note**
-4. Reload — the note should still be listed
+2. Click the floating annotation toolbar (bottom-right)
+3. Click an element, leave a comment, confirm the marker
+4. Reload — markers should still appear (localStorage)
+5. Right-click an element for Edit styles / Open dial panel / Move

@@ -315,7 +315,7 @@
   height: 18px;
   padding: 0 5px;
   border-radius: 9px;
-  background-color: var(--agentation-color-accent);
+  background-color: var(--dialkit-annotation-color-accent);
   color: white;
   font-size: 0.625rem;
   font-weight: 600;
@@ -379,20 +379,20 @@
   }
 
   &[data-active="true"] {
-    color: var(--agentation-color-blue);
+    color: var(--dialkit-annotation-color-blue);
     background-color: color-mix(
       in srgb,
-      var(--agentation-color-blue) 25%,
+      var(--dialkit-annotation-color-blue) 25%,
       transparent
     );
   }
 
 
   &[data-error="true"] {
-    color: var(--agentation-color-red);
+    color: var(--dialkit-annotation-color-red);
     background-color: color-mix(
       in srgb,
-      var(--agentation-color-red) 25%,
+      var(--dialkit-annotation-color-red) 25%,
       transparent
     );
   }
@@ -402,10 +402,10 @@
     ) {
     background-color: color-mix(
       in srgb,
-      var(--agentation-color-red) 25%,
+      var(--dialkit-annotation-color-red) 25%,
       transparent
     );
-    color: var(--agentation-color-red);
+    color: var(--dialkit-annotation-color-red);
   }
 
   &[data-no-hover="true"],
@@ -416,16 +416,16 @@
   }
 
   &[data-auto-sync="true"] {
-    color: var(--agentation-color-green);
+    color: var(--dialkit-annotation-color-green);
     background: transparent;
     cursor: default;
   }
 
   &[data-failed="true"] {
-    color: var(--agentation-color-red);
+    color: var(--dialkit-annotation-color-red);
     background-color: color-mix(
       in srgb,
-      var(--agentation-color-red) 25%,
+      var(--dialkit-annotation-color-red) 25%,
       transparent
     );
   }
@@ -439,7 +439,7 @@
   height: 16px;
   padding: 0 4px;
   border-radius: 8px;
-  background-color: var(--agentation-color-accent);
+  background-color: var(--dialkit-annotation-color-accent);
   color: white;
   font-size: 0.625rem;
   font-weight: 600;
@@ -451,7 +451,7 @@
     0 1px 3px rgba(0, 0, 0, 0.2);
   pointer-events: none;
 
-  [data-agentation-theme="light"] & {
+  [data-dialkit-annotation-theme="light"] & {
     box-shadow:
       0 0 0 2px #fff,
       0 1px 3px rgba(0, 0, 0, 0.2);
@@ -463,11 +463,11 @@
   0%,
   100% {
     box-shadow: 0 0 0 0
-      color-mix(in srgb, var(--agentation-color-green) 50%, transparent);
+      color-mix(in srgb, var(--dialkit-annotation-color-green) 50%, transparent);
   }
   50% {
     box-shadow: 0 0 0 5px
-      color-mix(in srgb, var(--agentation-color-green) 0%, transparent);
+      color-mix(in srgb, var(--dialkit-annotation-color-green) 0%, transparent);
   }
 }
 
@@ -475,11 +475,11 @@
   0%,
   100% {
     box-shadow: 0 0 0 0
-      color-mix(in srgb, var(--agentation-color-yellow) 50%, transparent);
+      color-mix(in srgb, var(--dialkit-annotation-color-yellow) 50%, transparent);
   }
   50% {
     box-shadow: 0 0 0 5px
-      color-mix(in srgb, var(--agentation-color-yellow) 0%, transparent);
+      color-mix(in srgb, var(--dialkit-annotation-color-yellow) 0%, transparent);
   }
 }
 
@@ -499,12 +499,12 @@
   transform: scale(1);
 
   &.connected {
-    background-color: var(--agentation-color-green);
+    background-color: var(--dialkit-annotation-color-green);
     animation: mcpIndicatorPulseConnected 2.5s ease-in-out infinite;
   }
 
   &.connecting {
-    background-color: var(--agentation-color-yellow);
+    background-color: var(--dialkit-annotation-color-yellow);
     animation: mcpIndicatorPulseConnecting 1.5s ease-in-out infinite;
   }
 
@@ -552,17 +552,17 @@
 }
 
 .connectionIndicatorConnected {
-  background-color: var(--agentation-color-green);
+  background-color: var(--dialkit-annotation-color-green);
   animation: connectionPulse 2.5s ease-in-out infinite;
 }
 
 .connectionIndicatorDisconnected {
-  background-color: var(--agentation-color-red);
+  background-color: var(--dialkit-annotation-color-red);
   animation: none;
 }
 
 .connectionIndicatorConnecting {
-  background-color: var(--agentation-color-yellow);
+  background-color: var(--dialkit-annotation-color-yellow);
   animation: connectionPulse 1s ease-in-out infinite;
 }
 
@@ -769,11 +769,11 @@
 .hoverHighlight {
   position: fixed;
   border: 2px solid
-    color-mix(in srgb, var(--agentation-color-accent) 50%, transparent);
+    color-mix(in srgb, var(--dialkit-annotation-color-accent) 50%, transparent);
   border-radius: 4px;
   background-color: color-mix(
     in srgb,
-    var(--agentation-color-accent) 4%,
+    var(--dialkit-annotation-color-accent) 4%,
     transparent
   );
   pointer-events: none !important;
@@ -789,12 +789,12 @@
 .multiSelectOutline {
   position: fixed;
   border: 2px dashed
-    color-mix(in srgb, var(--agentation-color-green) 60%, transparent);
+    color-mix(in srgb, var(--dialkit-annotation-color-green) 60%, transparent);
   border-radius: 4px;
   pointer-events: none !important;
   background-color: color-mix(
     in srgb,
-    var(--agentation-color-green) 5%,
+    var(--dialkit-annotation-color-green) 5%,
     transparent
   );
   box-sizing: border-box;
@@ -812,12 +812,12 @@
 .singleSelectOutline {
   position: fixed;
   border: 2px solid
-    color-mix(in srgb, var(--agentation-color-blue) 60%, transparent);
+    color-mix(in srgb, var(--dialkit-annotation-color-blue) 60%, transparent);
   border-radius: 4px;
   pointer-events: none !important;
   background-color: color-mix(
     in srgb,
-    var(--agentation-color-blue) 5%,
+    var(--dialkit-annotation-color-blue) 5%,
     transparent
   );
   box-sizing: border-box;
@@ -904,7 +904,7 @@
   position: absolute;
   width: 22px;
   height: 22px;
-  background: var(--agentation-color-blue);
+  background: var(--dialkit-annotation-color-blue);
   color: white;
   border-radius: 50%;
   display: flex;
@@ -955,7 +955,7 @@
 
   &.pending {
     position: fixed;
-    background-color: var(--agentation-color-blue);
+    background-color: var(--dialkit-annotation-color-blue);
     cursor: default;
   }
 
@@ -964,19 +964,19 @@
   }
 
   &.multiSelect {
-    background-color: var(--agentation-color-green);
+    background-color: var(--dialkit-annotation-color-green);
     width: 26px;
     height: 26px;
     border-radius: 6px;
     font-size: 0.75rem;
 
     &.pending {
-      background-color: var(--agentation-color-green);
+      background-color: var(--dialkit-annotation-color-green);
     }
   }
 
   &.hovered {
-    background-color: var(--agentation-color-red);
+    background-color: var(--dialkit-annotation-color-red);
   }
 }
 
@@ -1148,7 +1148,7 @@
       filter 0.1s ease;
   }
 
-  [data-agentation-theme="dark"] & {
+  [data-dialkit-annotation-theme="dark"] & {
     background: #1a1a1a;
     box-shadow:
       0 4px 20px rgba(0, 0, 0, 0.3),
@@ -1243,7 +1243,7 @@
     color: rgba(255, 255, 255, 0.9);
   }
 
-  [data-agentation-theme="light"] & {
+  [data-dialkit-annotation-theme="light"] & {
     color: rgba(0, 0, 0, 0.5);
 
     &:hover {
@@ -1260,11 +1260,11 @@
     color: #fff;
   }
 
-  [data-agentation-theme="light"] & svg {
+  [data-dialkit-annotation-theme="light"] & svg {
     color: rgba(0, 0, 0, 0.25);
   }
 
-  [data-agentation-theme="light"] &:hover svg {
+  [data-dialkit-annotation-theme="light"] &:hover svg {
     color: rgba(0, 0, 0, 0.8);
   }
 }
@@ -1282,12 +1282,12 @@
   flex-shrink: 0;
 
   &.connected {
-    background-color: var(--agentation-color-green);
+    background-color: var(--dialkit-annotation-color-green);
     animation: mcpPulse 2.5s ease-in-out infinite;
   }
 
   &.connecting {
-    background-color: var(--agentation-color-yellow);
+    background-color: var(--dialkit-annotation-color-yellow);
     animation: mcpPulse 1.5s ease-in-out infinite;
   }
 }
@@ -1326,7 +1326,7 @@
     }
   }
 
-  [data-agentation-theme="light"] & {
+  [data-dialkit-annotation-theme="light"] & {
     color: rgba(0, 0, 0, 0.85);
     border-bottom-color: rgba(0, 0, 0, 0.08);
 
@@ -1344,7 +1344,7 @@
   font-weight: 400;
   color: #fff;
 
-  [data-agentation-theme="light"] & {
+  [data-dialkit-annotation-theme="light"] & {
     color: rgba(0, 0, 0, 0.85);
   }
 }
@@ -1356,7 +1356,7 @@
   margin-top: 2px;
   line-height: 14px;
 
-  [data-agentation-theme="light"] & {
+  [data-dialkit-annotation-theme="light"] & {
     color: rgba(0, 0, 0, 0.5);
   }
 }
@@ -1372,7 +1372,7 @@
     color: #fff;
   }
 
-  [data-agentation-theme="light"] & {
+  [data-dialkit-annotation-theme="light"] & {
     color: rgba(0, 0, 0, 0.6);
     text-decoration-color: rgba(0, 0, 0, 0.2);
 
@@ -1399,11 +1399,11 @@
     color: color(display-p3 0.4 0.72 1);
   }
 
-  [data-agentation-theme="light"] & {
+  [data-dialkit-annotation-theme="light"] & {
     color: rgba(0, 0, 0, 0.4);
 
     &.active {
-      color: var(--agentation-color-blue);
+      color: var(--dialkit-annotation-color-blue);
     }
   }
 }
@@ -1440,7 +1440,7 @@
     background: rgba(255, 255, 255, 0.08);
   }
 
-  [data-agentation-theme="light"] & {
+  [data-dialkit-annotation-theme="light"] & {
     border-color: rgba(0, 0, 0, 0.1);
     background: rgba(0, 0, 0, 0.03);
     color: rgba(0, 0, 0, 0.85);
@@ -1475,7 +1475,7 @@
 }
 
 .settingsBrandSlash {
-  color: var(--agentation-color-accent);
+  color: var(--dialkit-annotation-color-accent);
   transition: color 0.2s ease;
 }
 
@@ -1562,7 +1562,7 @@
   cursor: pointer;
   letter-spacing: -0.0094em;
 
-  [data-agentation-theme="light"] & {
+  [data-dialkit-annotation-theme="light"] & {
     color: rgba(0, 0, 0, 0.85);
   }
 
@@ -1576,7 +1576,7 @@
   .settingsLabel {
     color: rgba(255, 255, 255, 0.2);
 
-    [data-agentation-theme="light"] & {
+    [data-dialkit-annotation-theme="light"] & {
       color: rgba(0, 0, 0, 0.2);
     }
   }
@@ -1624,7 +1624,7 @@
     transform: scale(1);
   }
 
-  [data-agentation-theme="light"] & {
+  [data-dialkit-annotation-theme="light"] & {
     background: rgba(0, 0, 0, 0.2);
 
     &.active {
@@ -1686,7 +1686,7 @@
   align-items: center;
   gap: 0.125rem;
 
-  [data-agentation-theme="light"] & {
+  [data-dialkit-annotation-theme="light"] & {
     color: rgba(0, 0, 0, 0.5);
   }
 }
@@ -1726,10 +1726,10 @@
   &.selected {
     background: color-mix(
       in srgb,
-      var(--agentation-color-blue) 15%,
+      var(--dialkit-annotation-color-blue) 15%,
       transparent
     );
-    color: var(--agentation-color-blue);
+    color: var(--dialkit-annotation-color-blue);
   }
 }
 
@@ -1904,7 +1904,7 @@
   }
 
   // Light mode variant (unchecked state)
-  [data-agentation-theme="light"] & {
+  [data-dialkit-annotation-theme="light"] & {
     border: 1px solid rgba(0, 0, 0, 0.15);
     background: #fff;
 
@@ -1929,7 +1929,7 @@
   align-items: center;
   gap: 0.25rem;
 
-  [data-agentation-theme="light"] & {
+  [data-dialkit-annotation-theme="light"] & {
     color: rgba(0, 0, 0, 0.5);
   }
 }
@@ -1953,7 +1953,7 @@
   }
 
   input:checked + .toggleSlider {
-    background-color: var(--agentation-color-blue);
+    background-color: var(--dialkit-annotation-color-blue);
   }
 
   input:checked + .toggleSlider::before {
@@ -1976,7 +1976,7 @@
   border-radius: 16px;
   background: #484848; // Dark mode unchecked
 
-  [data-agentation-theme="light"] & {
+  [data-dialkit-annotation-theme="light"] & {
     background: #dddddd; // Light mode unchecked
   }
 
@@ -1997,32 +1997,32 @@
 @keyframes mcpPulse {
   0% {
     box-shadow: 0 0 0 0
-      color-mix(in srgb, var(--agentation-color-green) 50%, transparent);
+      color-mix(in srgb, var(--dialkit-annotation-color-green) 50%, transparent);
   }
   70% {
     box-shadow: 0 0 0 6px
-      color-mix(in srgb, var(--agentation-color-green) 0%, transparent);
+      color-mix(in srgb, var(--dialkit-annotation-color-green) 0%, transparent);
   }
   100% {
     box-shadow: 0 0 0 0
-      color-mix(in srgb, var(--agentation-color-green) 0%, transparent);
+      color-mix(in srgb, var(--dialkit-annotation-color-green) 0%, transparent);
   }
 }
 
 @keyframes mcpPulseError {
   0% {
     box-shadow: 0 0 0 0
-      color-mix(in srgb, var(--agentation-color-red) 50%, transparent);
+      color-mix(in srgb, var(--dialkit-annotation-color-red) 50%, transparent);
   }
 
   70% {
     box-shadow: 0 0 0 6px
-      color-mix(in srgb, var(--agentation-color-red) 0%, transparent);
+      color-mix(in srgb, var(--dialkit-annotation-color-red) 0%, transparent);
   }
 
   100% {
     box-shadow: 0 0 0 0
-      color-mix(in srgb, var(--agentation-color-red) 0%, transparent);
+      color-mix(in srgb, var(--dialkit-annotation-color-red) 0%, transparent);
   }
 }
 
@@ -2034,19 +2034,19 @@
 
   // Connecting state
   &.connecting {
-    background-color: var(--agentation-color-yellow);
+    background-color: var(--dialkit-annotation-color-yellow);
     animation: mcpPulse 1.5s infinite;
   }
 
   // Connected state - subtle pulse
   &.connected {
-    background-color: var(--agentation-color-green);
+    background-color: var(--dialkit-annotation-color-green);
     animation: mcpPulse 2.5s ease-in-out infinite;
   }
 
   // Disconnected/error state
   &.disconnected {
-    background-color: var(--agentation-color-red);
+    background-color: var(--dialkit-annotation-color-red);
     animation: mcpPulseError 2s infinite;
   }
 }
@@ -2081,11 +2081,11 @@
   top: 0;
   left: 0;
   border: 2px solid
-    color-mix(in srgb, var(--agentation-color-green) 60%, transparent);
+    color-mix(in srgb, var(--dialkit-annotation-color-green) 60%, transparent);
   border-radius: 4px;
   background-color: color-mix(
     in srgb,
-    var(--agentation-color-green) 8%,
+    var(--dialkit-annotation-color-green) 8%,
     transparent
   );
   pointer-events: none;
@@ -2099,7 +2099,7 @@
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  background-color: var(--agentation-color-green);
+  background-color: var(--dialkit-annotation-color-green);
   color: white;
   font-size: 0.875rem;
   font-weight: 600;
@@ -2122,9 +2122,9 @@
   top: 0;
   left: 0;
   border: 2px solid
-    color-mix(in srgb, var(--agentation-color-green) 50%, transparent);
+    color-mix(in srgb, var(--dialkit-annotation-color-green) 50%, transparent);
   border-radius: 4px;
-  background: color-mix(in srgb, var(--agentation-color-green) 6%, transparent);
+  background: color-mix(in srgb, var(--dialkit-annotation-color-green) 6%, transparent);
   pointer-events: none;
   will-change: transform, width, height;
   contain: layout style;
@@ -2134,7 +2134,7 @@
 // Light Mode
 // =============================================================================
 
-[data-agentation-theme="light"] {
+[data-dialkit-annotation-theme="light"] {
   .toolbarContainer {
     background: #fff;
     color: rgba(0, 0, 0, 0.85);
@@ -2161,19 +2161,19 @@
     }
 
     &[data-active="true"] {
-      color: var(--agentation-color-blue);
+      color: var(--dialkit-annotation-color-blue);
       background: color-mix(
         in srgb,
-        var(--agentation-color-blue) 15%,
+        var(--dialkit-annotation-color-blue) 15%,
         transparent
       );
     }
 
     &[data-error="true"] {
-      color: var(--agentation-color-red);
+      color: var(--dialkit-annotation-color-red);
       background: color-mix(
         in srgb,
-        var(--agentation-color-red) 15%,
+        var(--dialkit-annotation-color-red) 15%,
         transparent
       );
     }
@@ -2181,24 +2181,24 @@
     &[data-danger]:hover:not(:disabled):not([data-active="true"]):not(
         [data-failed="true"]
       ) {
-      color: var(--agentation-color-red);
+      color: var(--dialkit-annotation-color-red);
       background: color-mix(
         in srgb,
-        var(--agentation-color-red) 15%,
+        var(--dialkit-annotation-color-red) 15%,
         transparent
       );
     }
 
     &[data-auto-sync="true"] {
-      color: var(--agentation-color-green);
+      color: var(--dialkit-annotation-color-green);
       background: transparent;
     }
 
     &[data-failed="true"] {
-      color: var(--agentation-color-red);
+      color: var(--dialkit-annotation-color-red);
       background: color-mix(
         in srgb,
-        var(--agentation-color-red) 15%,
+        var(--dialkit-annotation-color-red) 15%,
         transparent
       );
     }

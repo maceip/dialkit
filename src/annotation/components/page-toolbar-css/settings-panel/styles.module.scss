@@ -23,30 +23,30 @@
 @keyframes mcpPulse {
   0% {
     box-shadow: 0 0 0 0
-      color-mix(in srgb, var(--agentation-color-green) 50%, transparent);
+      color-mix(in srgb, var(--dialkit-annotation-color-green) 50%, transparent);
   }
   70% {
     box-shadow: 0 0 0 6px
-      color-mix(in srgb, var(--agentation-color-green) 0%, transparent);
+      color-mix(in srgb, var(--dialkit-annotation-color-green) 0%, transparent);
   }
   100% {
     box-shadow: 0 0 0 0
-      color-mix(in srgb, var(--agentation-color-green) 0%, transparent);
+      color-mix(in srgb, var(--dialkit-annotation-color-green) 0%, transparent);
   }
 }
 
 @keyframes mcpPulseError {
   0% {
     box-shadow: 0 0 0 0
-      color-mix(in srgb, var(--agentation-color-red) 50%, transparent);
+      color-mix(in srgb, var(--dialkit-annotation-color-red) 50%, transparent);
   }
   70% {
     box-shadow: 0 0 0 6px
-      color-mix(in srgb, var(--agentation-color-red) 0%, transparent);
+      color-mix(in srgb, var(--dialkit-annotation-color-red) 0%, transparent);
   }
   100% {
     box-shadow: 0 0 0 0
-      color-mix(in srgb, var(--agentation-color-red) 0%, transparent);
+      color-mix(in srgb, var(--dialkit-annotation-color-red) 0%, transparent);
   }
 }
 
@@ -146,7 +146,7 @@
       filter 0.1s ease;
   }
 
-  [data-agentation-theme="dark"] & {
+  [data-dialkit-annotation-theme="dark"] & {
     background: #1a1a1a;
     box-shadow:
       0 4px 20px rgba(0, 0, 0, 0.3),
@@ -242,7 +242,7 @@
 }
 
 .settingsBrandSlash {
-  color: var(--agentation-color-accent);
+  color: var(--dialkit-annotation-color-accent);
   transition: color 0.2s ease;
 }
 
@@ -275,7 +275,7 @@
     color: rgba(255, 255, 255, 0.8);
   }
 
-  [data-agentation-theme="light"] & {
+  [data-dialkit-annotation-theme="light"] & {
     color: rgba(0, 0, 0, 0.4);
 
     &:hover {
@@ -326,7 +326,7 @@
   .settingsLabel {
     color: rgba(255, 255, 255, 0.2);
 
-    [data-agentation-theme="light"] & {
+    [data-dialkit-annotation-theme="light"] & {
       color: rgba(0, 0, 0, 0.2);
     }
   }
@@ -342,7 +342,7 @@
   letter-spacing: -0.15px;
   color: rgb(255 255 255 / 0.5);
 
-  [data-agentation-theme="light"] & {
+  [data-dialkit-annotation-theme="light"] & {
     color: rgb(0 0 0 / 0.5);
   }
 }
@@ -364,7 +364,7 @@
   cursor: pointer;
   letter-spacing: -0.0094em;
 
-  [data-agentation-theme="light"] & {
+  [data-dialkit-annotation-theme="light"] & {
     color: rgba(0, 0, 0, 0.85);
   }
 
@@ -400,7 +400,7 @@
     transform: scale(1);
   }
 
-  [data-agentation-theme="light"] & {
+  [data-dialkit-annotation-theme="light"] & {
     background: rgba(0, 0, 0, 0.2);
 
     &.active {
@@ -430,7 +430,7 @@
   background-color: #fff;
   cursor: pointer;
 
-  [data-agentation-theme="dark"] & {
+  [data-dialkit-annotation-theme="dark"] & {
     background-color: #1a1a1a;
   }
 
@@ -501,7 +501,7 @@
     color: #fff;
   }
 
-  [data-agentation-theme="light"] & {
+  [data-dialkit-annotation-theme="light"] & {
     color: rgba(0, 0, 0, 0.5);
 
     &:hover {
@@ -555,7 +555,7 @@
     opacity: 1;
   }
 
-  [data-agentation-theme="light"] & {
+  [data-dialkit-annotation-theme="light"] & {
     color: rgba(0, 0, 0, 0.85);
     border-bottom-color: rgba(0, 0, 0, 0.08);
   }
@@ -569,7 +569,7 @@
   font-weight: 400;
   color: #fff;
 
-  [data-agentation-theme="light"] & {
+  [data-dialkit-annotation-theme="light"] & {
     color: rgba(0, 0, 0, 0.85);
   }
 }
@@ -581,7 +581,7 @@
   margin-top: 2px;
   line-height: 14px;
 
-  [data-agentation-theme="light"] & {
+  [data-dialkit-annotation-theme="light"] & {
     color: rgba(0, 0, 0, 0.5);
   }
 }
@@ -598,7 +598,7 @@
     color: #fff;
   }
 
-  [data-agentation-theme="light"] & {
+  [data-dialkit-annotation-theme="light"] & {
     color: rgba(0, 0, 0, 0.6);
     text-decoration-color: rgba(0, 0, 0, 0.2);
 
@@ -628,11 +628,11 @@
     color: color(display-p3 0.4 0.72 1);
   }
 
-  [data-agentation-theme="light"] & {
+  [data-dialkit-annotation-theme="light"] & {
     color: rgba(0 0 0 / 0.4);
 
     &.active {
-      color: var(--agentation-color-blue);
+      color: var(--dialkit-annotation-color-blue);
     }
   }
 
@@ -649,17 +649,17 @@
   flex-shrink: 0;
 
   &.connecting {
-    background-color: var(--agentation-color-yellow);
+    background-color: var(--dialkit-annotation-color-yellow);
     animation: mcpPulse 1.5s infinite;
   }
 
   &.connected {
-    background-color: var(--agentation-color-green);
+    background-color: var(--dialkit-annotation-color-green);
     animation: mcpPulse 2.5s ease-in-out infinite;
   }
 
   &.disconnected {
-    background-color: var(--agentation-color-red);
+    background-color: var(--dialkit-annotation-color-red);
     animation: mcpPulseError 2s infinite;
   }
 }
@@ -671,12 +671,12 @@
   flex-shrink: 0;
 
   &.connected {
-    background-color: var(--agentation-color-green);
+    background-color: var(--dialkit-annotation-color-green);
     animation: mcpPulse 2.5s ease-in-out infinite;
   }
 
   &.connecting {
-    background-color: var(--agentation-color-yellow);
+    background-color: var(--dialkit-annotation-color-yellow);
     animation: mcpPulse 1.5s ease-in-out infinite;
   }
 }
@@ -713,7 +713,7 @@
     background: rgba(255, 255, 255, 0.08);
   }
 
-  [data-agentation-theme="light"] & {
+  [data-dialkit-annotation-theme="light"] & {
     border-color: rgba(0, 0, 0, 0.1);
     background: rgba(0, 0, 0, 0.03);
     color: rgba(0, 0, 0, 0.85);
@@ -733,7 +733,7 @@
 // Light mode overrides
 // =============================================================================
 
-[data-agentation-theme="light"] {
+[data-dialkit-annotation-theme="light"] {
   .settingsPanel {
     background: #fff;
     box-shadow:
@@ -803,7 +803,7 @@
   height: 1px;
   background-color: rgb(26 26 26 / 0.07);
 
-  [data-agentation-theme="dark"] & {
+  [data-dialkit-annotation-theme="dark"] & {
     background-color: rgb(255 255 255 / 0.07);
   }
 }

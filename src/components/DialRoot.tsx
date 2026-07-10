@@ -4,9 +4,8 @@ import { DialStore, PanelConfig } from '../store/DialStore';
 import { Folder } from './Folder';
 import { Panel } from './Panel';
 import { ShortcutListener } from './ShortcutListener';
-import { FeedbackPanel } from './FeedbackPanel';
-import { DevSessionHost } from './DevSessionHost';
 import { AnnotationToolbar } from './AnnotationToolbar';
+import { DevSessionHost } from './DevSessionHost';
 import { DevSessionStore } from '../store/DevSessionStore';
 import { blockPanelDragClick, getPanelDragHandle, getPanelDragOffset, getPanelDragStart, getPanelOriginX, hasPanelDragMoved } from '../panel-drag';
 
@@ -205,6 +204,7 @@ function DialRootInner({
     <div className="dialkit-root" data-mode={mode} data-theme={theme}>
       {devSessionEnabled ? <DevSessionHost projectKey={projectKey} /> : null}
       {devSessionEnabled ? <AnnotationToolbar projectKey={projectKey} /> : null}
+      {panels.length > 0 ? (
       <div
         ref={panelRef}
         className="dialkit-panel"
@@ -236,7 +236,6 @@ function DialRootInner({
                   variant="section"
                 />
               ))}
-              {devSessionEnabled ? <FeedbackPanel defaultOpen={true} inline={inline} /> : null}
             </Folder>
           </div>
         ) : (
@@ -250,10 +249,10 @@ function DialRootInner({
                 onOpenChange={(open) => handlePanelOpenChange(panel.id, open)}
               />
             ))}
-            {devSessionEnabled ? <FeedbackPanel defaultOpen={inline || defaultOpen} inline={inline} /> : null}
           </>
         )}
       </div>
+      ) : null}
     </div>
   </ShortcutListener>
   );
