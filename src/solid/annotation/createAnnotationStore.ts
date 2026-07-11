@@ -149,12 +149,18 @@ export function createAnnotationStore(projectKey = 'default') {
     return false;
   };
 
-  /** Document-level capture listeners — Solid owns lifecycle via onCleanup. */
+  /**
+   * Armed annotate mode places pins on RIGHT-click, so ordinary left-clicks
+   * (links, buttons) keep working while the mode is on. Registered on window
+   * capture: window is visited before document, so stopPropagation() keeps
+   * the dev-session context menu (document capture) from opening too.
+   */
   const attachPageListeners = () => {
-    if (typeof document === 'undefined') return () => {};
+    if (typeof window === 'undefined') return () => {};
 
-    const onClick = (e: MouseEvent) => {
+    const onContextMenu = (e: MouseEvent) => {
       if (!active() || pending() || editingId()) return;
+      if (e.target instanceof Element && isAnnotationUi(e.target)) return;
       const next = buildPendingFromEvent(e);
       if (!next) return;
       e.preventDefault();
@@ -162,8 +168,8 @@ export function createAnnotationStore(projectKey = 'default') {
       setPending(next);
     };
 
-    document.addEventListener('click', onClick, true);
-    return () => document.removeEventListener('click', onClick, true);
+    window.addEventListener('contextmenu', onContextMenu, true);
+    return () => window.removeEventListener('contextmenu', onContextMenu, true);
   };
 
   return {

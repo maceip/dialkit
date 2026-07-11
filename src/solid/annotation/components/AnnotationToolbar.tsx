@@ -38,7 +38,7 @@ const HOWTO: { id: Exclude<ToolId, null | 'info'>; title: string; body: string }
   { id: 'move', title: 'Move', body: 'Click an element, then drag to nudge its position.' },
   { id: 'color', title: 'Color', body: 'Click an element to open the style editor (colors, type, spacing).' },
   { id: 'dial', title: 'Dial', body: 'Open live parameter dials for this page.' },
-  { id: 'annotate', title: 'Annotate', body: 'Click elements to leave notes. Copy or clear from the annotate tray.' },
+  { id: 'annotate', title: 'Annotate', body: 'Arm the tool, then right-click an element to pin a note. Copy or clear from the annotate tray.' },
   { id: 'search', title: 'Search', body: 'Find elements by visible text, then jump to a match.' },
 ];
 
@@ -298,7 +298,7 @@ export function AnnotationToolbar(props: SolidAnnotationToolbarProps) {
         <Show when={tool() === 'annotate'}>
           <div class="dk-ann-flyout dk-ann-annotate-tray" data-dialkit-annotation-toolbar>
             <span class="dk-ann-tray-label">
-              {store.active() ? 'Annotating' : 'Annotate'}
+              {store.active() ? 'Right-click an element to pin a note' : 'Annotate'}
               <Show when={count() > 0}>
                 <span class="dk-ann-badge">{count()}</span>
               </Show>

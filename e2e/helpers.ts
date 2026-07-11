@@ -56,7 +56,10 @@ export async function annotateElement(
   comment: string,
 ): Promise<void> {
   await activateAnnotationToolbar(page);
-  await target.click({ force: true });
+  // Solid rail pins on right-click (left-clicks stay live for the page);
+  // the vendored React Agentation toolbar keeps its left-click model.
+  const isSolidRail = (await page.getByTestId('dialkit-tool-annotate').count()) > 0;
+  await target.click({ force: true, button: isSolidRail ? 'right' : 'left' });
 
   const popup = page.locator('[data-annotation-popup]');
   await expect(popup).toBeVisible({ timeout: 10_000 });
