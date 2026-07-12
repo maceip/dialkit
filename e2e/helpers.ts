@@ -22,11 +22,20 @@ export async function openDemo(page: Page): Promise<void> {
   await tuckDialPanels(page);
 }
 
+/** Expand the Solid rail if it's in its collapsed (grip + chevron) state. */
+export async function expandRail(page: Page): Promise<void> {
+  const toolbar = annotationToolbar(page);
+  if ((await toolbar.getAttribute('data-collapsed')) !== 'true') return;
+  await page.getByTestId('dialkit-rail-toggle').click();
+  await expect(toolbar).toHaveAttribute('data-collapsed', 'false', { timeout: 5_000 });
+}
+
 /** Activate annotate mode — Solid vertical tool or React Agentation toolbar. */
 export async function activateAnnotationToolbar(page: Page): Promise<void> {
   await tuckDialPanels(page);
   const toolbar = annotationToolbar(page);
   await expect(toolbar).toBeVisible();
+  await expandRail(page);
 
   const solidAnnotate = page.getByTestId('dialkit-tool-annotate');
   if (await solidAnnotate.count()) {

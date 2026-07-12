@@ -35,6 +35,7 @@ import {
 import {
   IconAnnotate,
   IconCapture,
+  IconChevronDown,
   IconColor,
   IconDial,
   IconGrip,
@@ -141,8 +142,22 @@ export function AnnotationToolbar(props: SolidAnnotationToolbarProps) {
   const [copiedAll, setCopiedAll] = createSignal(false);
   const [railPos, setRailPos] = createSignal<RailPos | null>(loadRailPos());
   const [accent, setAccent] = createSignal(loadAccent() ?? DEFAULT_ACCENT);
+  const [railCollapsed, setRailCollapsed] = createSignal(true);
   const moveTool = new MoveTool();
   let railRef: HTMLDivElement | undefined;
+
+  /** Collapsing also parks every tool so no mode stays armed invisibly. */
+  const toggleRail = () => {
+    if (!railCollapsed()) {
+      setTool(null);
+      store.setActive(false);
+      store.cancelPending();
+      store.setEditingId(null);
+      setDialsOpen(false);
+      moveTool.stop();
+    }
+    setRailCollapsed(!railCollapsed());
+  };
 
   const onGripPointerDown = (e: PointerEvent) => {
     if (!railRef || e.button !== 0) return;
@@ -223,6 +238,7 @@ export function AnnotationToolbar(props: SolidAnnotationToolbarProps) {
     const mq = window.matchMedia?.('(prefers-color-scheme: dark)');
     const onTheme = () => setSysDark(prefersDark());
     const onOpenDials = () => {
+      setRailCollapsed(false);
       setDialsOpen(true);
       setTool('dial');
     };
@@ -430,6 +446,7 @@ export function AnnotationToolbar(props: SolidAnnotationToolbarProps) {
           data-dialkit-annotation-toolbar
           data-testid="dialkit-annotation-toolbar"
           data-orientation="vertical"
+          data-collapsed={railCollapsed() ? 'true' : 'false'}
           style={railStyle()}
         >
           <div
@@ -441,15 +458,31 @@ export function AnnotationToolbar(props: SolidAnnotationToolbarProps) {
           >
             <IconGrip />
           </div>
-          {toolButton('info', 'How to use', <IconInfo />)}
-          {toolButton('move', 'Move', <IconMove />)}
-          {toolButton('color', 'Color / styles', <IconColor />)}
-          {toolButton('dial', 'Open dials', <IconDial />)}
-          {toolButton('annotate', 'Annotate', <IconAnnotate />, { badge: count })}
-          <Show when={store.captureSupported()}>
-            {toolButton('capture', 'Capture region', <IconCapture />)}
+          <Show when={!railCollapsed()}>
+            {toolButton('info', 'How to use', <IconInfo />)}
+            {toolButton('move', 'Move', <IconMove />)}
+            {toolButton('color', 'Color / styles', <IconColor />)}
+            {toolButton('dial', 'Open dials', <IconDial />)}
+            {toolButton('annotate', 'Annotate', <IconAnnotate />, { badge: count })}
+            <Show when={store.captureSupported()}>
+              {toolButton('capture', 'Capture region', <IconCapture />)}
+            </Show>
+            {toolButton('search', 'Search elements', <IconSearch />)}
           </Show>
-          {toolButton('search', 'Search elements', <IconSearch />)}
+          <button
+            type="button"
+            class="dk-ann-expand"
+            data-testid="dialkit-rail-toggle"
+            aria-expanded={!railCollapsed()}
+            aria-label={railCollapsed() ? 'Expand tools' : 'Collapse tools'}
+            title={railCollapsed() ? 'Show tools' : 'Hide tools'}
+            onClick={toggleRail}
+          >
+            <IconChevronDown />
+            <Show when={railCollapsed() && count() > 0}>
+              <span class="dk-ann-tool-badge">{count()}</span>
+            </Show>
+          </button>
         </div>
 
         <Show when={tool() === 'info'}>

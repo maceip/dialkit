@@ -94,6 +94,39 @@
   display: block;
 }
 
+.dk-ann-expand {
+  position: relative;
+  appearance: none;
+  border: 0;
+  border-top: 1px solid var(--dk-ann-line);
+  border-radius: 0 0 999px 999px;
+  background: transparent;
+  color: var(--dk-ann-muted);
+  width: 40px;
+  height: 22px;
+  margin-top: 2px;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+}
+
+.dk-ann-expand:hover {
+  color: var(--dk-ann-ink);
+  background: color-mix(in srgb, var(--dk-ann-accent) 10%, transparent);
+}
+
+.dk-ann-expand svg {
+  width: 14px;
+  height: 14px;
+  display: block;
+  transition: transform 0.18s ease;
+}
+
+.dk-ann-toolbar[data-collapsed="false"] .dk-ann-expand svg {
+  transform: rotate(180deg);
+}
+
 .dk-ann-tool-badge {
   position: absolute;
   top: 2px;

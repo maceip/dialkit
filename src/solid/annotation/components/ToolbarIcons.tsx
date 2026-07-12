@@ -77,6 +77,14 @@ export function IconSearch() {
   );
 }
 
+export function IconChevronDown() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="m6 9.5 6 6 6-6" {...stroke} />
+    </svg>
+  );
+}
+
 export function IconGrip() {
   return (
     <svg viewBox="0 0 24 24" aria-hidden="true">
