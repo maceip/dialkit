@@ -626,6 +626,7 @@ export function AnnotationToolbar(props: SolidAnnotationToolbarProps) {
               <AnnotationMarker
                 annotation={annotation}
                 index={index()}
+                scrollY={scrollY}
                 onSelect={() => {
                   store.setPending(null);
                   store.setEditingId(annotation.id);
@@ -654,6 +655,7 @@ export function AnnotationToolbar(props: SolidAnnotationToolbarProps) {
           {(p) => (
             <AnnotationPopup
               pending={p()}
+              scrollY={scrollY}
               screenshotUrl={store.screenshotFor(p())}
               onCancel={() => store.cancelPending()}
               onSubmit={(comment) => {
@@ -672,6 +674,7 @@ export function AnnotationToolbar(props: SolidAnnotationToolbarProps) {
           {(p) => (
             <AnnotationPopup
               pending={p()}
+              scrollY={scrollY}
               screenshotUrl={editing() ? store.screenshotFor(editing()!) : null}
               initialComment={editing()?.comment ?? ''}
               submitLabel="Save"

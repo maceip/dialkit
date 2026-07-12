@@ -1,8 +1,9 @@
-import { createSignal, Show } from 'solid-js';
+import { createSignal, Show, type Accessor } from 'solid-js';
 import type { PendingAnnotation } from '../createAnnotationStore';
 
 export function AnnotationPopup(props: {
   pending: PendingAnnotation;
+  scrollY: Accessor<number>;
   onSubmit: (comment: string) => void;
   onCancel: () => void;
   initialComment?: string;
@@ -11,8 +12,7 @@ export function AnnotationPopup(props: {
   screenshotUrl?: string | null;
 }) {
   const [text, setText] = createSignal(props.initialComment ?? '');
-  const scrollY = () => (typeof window !== 'undefined' ? window.scrollY : 0);
-  const top = () => (props.pending.isFixed ? props.pending.y : props.pending.y - scrollY()) + 18;
+  const top = () => (props.pending.isFixed ? props.pending.y : props.pending.y - props.scrollY()) + 18;
   const left = () => `${Math.min(Math.max(props.pending.x, 8), 92)}%`;
 
   return (

@@ -1,4 +1,4 @@
-import { createMemo, createSignal, onCleanup } from 'solid-js';
+import { createMemo, createSignal } from 'solid-js';
 import type { Annotation } from '../../annotation/types';
 import {
   loadAnnotations,
@@ -273,16 +273,3 @@ export function createAnnotationStore(projectKey = 'default') {
 }
 
 export type AnnotationStore = ReturnType<typeof createAnnotationStore>;
-
-/** Convenience for components that need cleanup when active toggles. */
-export function useAnnotationPageCapture(store: AnnotationStore) {
-  let detach: (() => void) | undefined;
-  const sync = () => {
-    detach?.();
-    detach = undefined;
-    if (store.active()) detach = store.attachPageListeners();
-  };
-  sync();
-  onCleanup(() => detach?.());
-  return sync;
-}

@@ -1,12 +1,13 @@
+import type { Accessor } from 'solid-js';
 import type { Annotation } from '../../../annotation/types';
 
 export function AnnotationMarker(props: {
   annotation: Annotation;
   index: number;
+  scrollY: Accessor<number>;
   onSelect: () => void;
 }) {
-  const scrollY = () => (typeof window !== 'undefined' ? window.scrollY : 0);
-  const top = () => (props.annotation.isFixed ? props.annotation.y : props.annotation.y - scrollY());
+  const top = () => (props.annotation.isFixed ? props.annotation.y : props.annotation.y - props.scrollY());
   const left = () => `${props.annotation.x}%`;
 
   return (
