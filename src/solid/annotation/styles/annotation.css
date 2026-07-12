@@ -189,6 +189,37 @@
   border-color: var(--dk-ann-ink);
 }
 
+.dk-ann-theme-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 10px;
+}
+
+.dk-ann-theme-row > span {
+  font-size: 12px;
+  font-weight: 600;
+  margin-right: auto;
+}
+
+.dk-ann-theme-btn {
+  appearance: none;
+  border: 1px solid var(--dk-ann-line);
+  background: transparent;
+  color: var(--dk-ann-muted);
+  border-radius: 999px;
+  padding: 3px 10px;
+  font: inherit;
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.dk-ann-theme-btn[data-active="true"] {
+  background: color-mix(in srgb, var(--dk-ann-accent) 16%, transparent);
+  border-color: var(--dk-ann-accent);
+  color: var(--dk-ann-ink);
+}
+
 .dk-ann-annotate-tray {
   display: flex;
   flex-wrap: wrap;

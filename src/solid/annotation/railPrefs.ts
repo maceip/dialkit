@@ -4,8 +4,11 @@
 
 const POS_KEY = 'dialkit:annotations:rail-pos';
 const ACCENT_KEY = 'dialkit:annotations:accent';
+const THEME_KEY = 'dialkit:annotations:theme';
 
 export type RailPos = { x: number; y: number };
+
+export type RailTheme = 'auto' | 'light' | 'dark';
 
 export const DEFAULT_ACCENT = '#0088ff';
 
@@ -56,6 +59,26 @@ export function saveAccent(value: string): void {
   try {
     if (value === DEFAULT_ACCENT) localStorage.removeItem(ACCENT_KEY);
     else localStorage.setItem(ACCENT_KEY, value);
+  } catch {
+    // ignore
+  }
+}
+
+export function loadTheme(): RailTheme {
+  if (typeof window === 'undefined') return 'auto';
+  try {
+    const value = localStorage.getItem(THEME_KEY);
+    return value === 'light' || value === 'dark' ? value : 'auto';
+  } catch {
+    return 'auto';
+  }
+}
+
+export function saveTheme(value: RailTheme): void {
+  if (typeof window === 'undefined') return;
+  try {
+    if (value === 'auto') localStorage.removeItem(THEME_KEY);
+    else localStorage.setItem(THEME_KEY, value);
   } catch {
     // ignore
   }

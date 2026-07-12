@@ -1779,6 +1779,46 @@
   cursor: pointer;
 }
 
+/* Light theme for the dev-session host panels. The annotation toolbar
+   resolves the page's theme (or an explicit user preference) and mirrors it
+   to <html data-dialkit-theme>, so these panels match the rail chrome. */
+:root[data-dialkit-theme="light"] .dialkit-dev-context-menu,
+:root[data-dialkit-theme="light"] .dialkit-dev-note-composer,
+:root[data-dialkit-theme="light"] .dialkit-dev-css-panel {
+  background: #ffffff;
+  color: #0f172a;
+  border-color: rgba(15, 23, 42, 0.12);
+  box-shadow: 0 12px 40px rgba(15, 23, 42, 0.18);
+}
+
+:root[data-dialkit-theme="light"] .dialkit-dev-context-menu button:hover {
+  background: rgba(15, 23, 42, 0.06);
+}
+
+:root[data-dialkit-theme="light"] .dialkit-dev-note-composer textarea,
+:root[data-dialkit-theme="light"] .dialkit-dev-css-row input,
+:root[data-dialkit-theme="light"] .dialkit-dev-css-row select {
+  border-color: rgba(15, 23, 42, 0.15);
+  background: rgba(15, 23, 42, 0.04);
+}
+
+:root[data-dialkit-theme="light"] .dialkit-dev-css-toolbar button,
+:root[data-dialkit-theme="light"] .dialkit-dev-eyedropper {
+  border-color: rgba(15, 23, 42, 0.15);
+  background: rgba(15, 23, 42, 0.05);
+}
+
+:root[data-dialkit-theme="light"] .dialkit-dev-css-toolbar button:hover,
+:root[data-dialkit-theme="light"] .dialkit-dev-eyedropper:hover {
+  background: rgba(15, 23, 42, 0.1);
+}
+
+:root[data-dialkit-theme="light"] .dialkit-dev-note-head button,
+:root[data-dialkit-theme="light"] .dialkit-dev-css-head button,
+:root[data-dialkit-theme="light"] .dialkit-dev-note-meta {
+  color: #64748b;
+}
+
 .dialkit-dev-measure {
   position: fixed;
   pointer-events: none;

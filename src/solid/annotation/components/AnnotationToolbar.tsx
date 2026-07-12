@@ -18,15 +18,19 @@ import { ensureAnnotationStyles } from '../injectCss';
 import { AnnotationMarker } from './AnnotationMarker';
 import { AnnotationPopup } from './AnnotationPopup';
 import { DevSessionStore } from '../../../store/DevSessionStore';
+import { detectPageIsDark, watchPageTheme } from '../../../annotation/utils/page-theme';
 import {
   clampRailPos,
   DEFAULT_ACCENT,
   loadAccent,
   loadRailPos,
+  loadTheme,
   RAIL_ACCENTS,
   saveAccent,
   saveRailPos,
+  saveTheme,
   type RailPos,
+  type RailTheme,
 } from '../railPrefs';
 import {
   IconAnnotate,
@@ -121,7 +125,15 @@ function findElementsByText(query: string): { el: HTMLElement; label: string }[]
 
 export function AnnotationToolbar(props: SolidAnnotationToolbarProps) {
   const store = createAnnotationStore(props.projectKey ?? 'default');
-  const [themeDark, setThemeDark] = createSignal(prefersDark());
+  const [themePref, setThemePref] = createSignal<RailTheme>(loadTheme());
+  const [pageDark, setPageDark] = createSignal<boolean | null>(null);
+  const [sysDark, setSysDark] = createSignal(prefersDark());
+  // Preference wins; otherwise match the page; system is the last resort.
+  const themeDark = createMemo(() => {
+    const pref = themePref();
+    if (pref !== 'auto') return pref === 'dark';
+    return pageDark() ?? sysDark();
+  });
   const [scrollY, setScrollY] = createSignal(typeof window !== 'undefined' ? window.scrollY : 0);
   const [tool, setTool] = createSignal<ToolId>(null);
   const [searchQuery, setSearchQuery] = createSignal('');
@@ -169,6 +181,11 @@ export function AnnotationToolbar(props: SolidAnnotationToolbarProps) {
     saveAccent(value);
   };
 
+  const pickTheme = (value: RailTheme) => {
+    setThemePref(value);
+    saveTheme(value);
+  };
+
   const railStyle = () => {
     const pos = railPos();
     return pos ? { left: `${pos.x}px`, top: `${pos.y}px`, transform: 'none' } : undefined;
@@ -204,7 +221,7 @@ export function AnnotationToolbar(props: SolidAnnotationToolbarProps) {
     ensureAnnotationStyles();
     const onScroll = () => setScrollY(window.scrollY);
     const mq = window.matchMedia?.('(prefers-color-scheme: dark)');
-    const onTheme = () => setThemeDark(prefersDark());
+    const onTheme = () => setSysDark(prefersDark());
     const onOpenDials = () => {
       setDialsOpen(true);
       setTool('dial');
@@ -215,17 +232,29 @@ export function AnnotationToolbar(props: SolidAnnotationToolbarProps) {
       const r = railRef.getBoundingClientRect();
       setRailPos(clampRailPos(pos, r.width, r.height));
     };
+    setPageDark(detectPageIsDark());
+    const unwatchPage = watchPageTheme(() => setPageDark(detectPageIsDark()));
     window.addEventListener('scroll', onScroll, { passive: true });
     window.addEventListener('dialkit:open-dials', onOpenDials);
     window.addEventListener('resize', onResize);
     mq?.addEventListener?.('change', onTheme);
     onCleanup(() => {
+      unwatchPage();
       window.removeEventListener('scroll', onScroll);
       window.removeEventListener('dialkit:open-dials', onOpenDials);
       window.removeEventListener('resize', onResize);
       mq?.removeEventListener?.('change', onTheme);
       moveTool.stop();
     });
+  });
+
+  // Mirror the resolved theme onto <html> so the dev-session host panels
+  // (style editor, context menu) match the rail chrome.
+  createEffect(() => {
+    document.documentElement.dataset.dialkitTheme = themeDark() ? 'dark' : 'light';
+  });
+  onCleanup(() => {
+    delete document.documentElement.dataset.dialkitTheme;
   });
 
   const selectTool = (next: ToolId) => {
@@ -450,6 +479,23 @@ export function AnnotationToolbar(props: SolidAnnotationToolbarProps) {
                     style={{ background: opt.value }}
                     onClick={() => pickAccent(opt.value)}
                   />
+                )}
+              </For>
+            </div>
+            <div class="dk-ann-theme-row" role="group" aria-label="Toolbar theme">
+              <span>Theme</span>
+              <For each={['auto', 'light', 'dark'] as const}>
+                {(opt) => (
+                  <button
+                    type="button"
+                    class="dk-ann-theme-btn"
+                    data-active={themePref() === opt ? 'true' : 'false'}
+                    data-testid={`dialkit-theme-${opt}`}
+                    title={opt === 'auto' ? 'Match the page' : undefined}
+                    onClick={() => pickTheme(opt)}
+                  >
+                    {opt === 'auto' ? 'Auto' : opt === 'light' ? 'Light' : 'Dark'}
+                  </button>
                 )}
               </For>
             </div>
