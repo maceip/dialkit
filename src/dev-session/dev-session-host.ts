@@ -311,6 +311,25 @@ export class DevSessionHost {
     input.addEventListener('input', () => {
       if (def.type === 'color' || def.type === 'number') this.commitCss(def.key, input.value);
     });
+    if (def.type === 'color' && supportsEyeDropper()) {
+      const wrap = document.createElement('span');
+      wrap.className = 'dialkit-dev-color-field';
+      const pick = document.createElement('button');
+      pick.type = 'button';
+      pick.className = 'dialkit-dev-eyedropper';
+      pick.title = 'Pick color from screen';
+      pick.setAttribute('aria-label', 'Pick color from screen');
+      pick.innerHTML = EYEDROPPER_SVG;
+      pick.addEventListener('click', async (e) => {
+        e.preventDefault();
+        const hex = await pickScreenColor();
+        if (!hex) return;
+        input.value = hex;
+        this.commitCss(def.key, hex);
+      });
+      wrap.append(input, pick);
+      return wrap;
+    }
     return input;
   }
 
@@ -339,6 +358,27 @@ export class DevSessionHost {
 function escapeHtml(value: string): string {
   return value.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
+
+interface EyeDropperApi {
+  open(): Promise<{ sRGBHex: string }>;
+}
+
+function supportsEyeDropper(): boolean {
+  return typeof window !== 'undefined' && 'EyeDropper' in window;
+}
+
+/** Native EyeDropper (Chromium): pick any pixel on screen. Null on cancel. */
+async function pickScreenColor(): Promise<string | null> {
+  try {
+    const Ctor = (window as unknown as { EyeDropper: new () => EyeDropperApi }).EyeDropper;
+    const result = await new Ctor().open();
+    return result.sRGBHex;
+  } catch {
+    return null; // user pressed Escape
+  }
+}
+
+const EYEDROPPER_SVG = `<svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true"><path d="m18.4 3.6-2.5 2.5-.9-.9a1.3 1.3 0 0 0-1.8 1.8l.9.9-8.2 8.2c-.3.3-.5.7-.6 1.1l-.6 2.6a.7.7 0 0 0 .9.9l2.6-.6c.4-.1.8-.3 1.1-.6l8.2-8.2.9.9a1.3 1.3 0 0 0 1.8-1.8l-.9-.9 2.5-2.5a2.1 2.1 0 1 0-3-3l-.4.4Z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
 
 function toHexColor(value: string): string {
   if (/^#[0-9a-f]{6}$/i.test(value)) return value;

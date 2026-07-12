@@ -37,7 +37,7 @@ interface DialRootProps {
   mode?: DialMode;
   theme?: DialTheme;
   productionEnabled?: boolean;
-  devSession?: boolean | { projectKey?: string };
+  devSession?: boolean | { projectKey?: string; issueUrl?: string };
   onOpenChange?: (open: boolean) => void;
 }
 
@@ -53,6 +53,7 @@ export function DialRoot(props: DialRootProps) {
 function DialRootInner(props: DialRootProps) {
   const devSessionEnabled = () => Boolean(props.devSession);
   const projectKey = () => typeof props.devSession === 'object' ? (props.devSession.projectKey ?? 'default') : 'default';
+  const issueUrl = () => typeof props.devSession === 'object' ? props.devSession.issueUrl : undefined;
   const [panels, setPanels] = createSignal<PanelConfig[]>([]);
   const [mounted, setMounted] = createSignal(false);
   const [dragOffset, setDragOffset] = createSignal<PanelDragOffset | null>(null);
@@ -196,7 +197,7 @@ function DialRootInner(props: DialRootProps) {
     <ShortcutListener>
       <div class="dialkit-root" data-mode={props.mode ?? 'popover'} data-theme={props.theme ?? 'system'}>
         <Show when={devSessionEnabled()}>
-          <AnnotationToolbar projectKey={projectKey()} />
+          <AnnotationToolbar projectKey={projectKey()} issueUrl={issueUrl()} />
         </Show>
         {/* With the vertical tool chrome, dials stay closed until the Dial tool opens them. */}
         <Show when={panels().length > 0 && (!devSessionEnabled() || dialsOpen())}>

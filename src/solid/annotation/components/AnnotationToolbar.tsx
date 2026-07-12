@@ -17,30 +17,54 @@ import { dialsOpen, setDialsOpen } from '../toolChrome';
 import { ensureAnnotationStyles } from '../injectCss';
 import { AnnotationMarker } from './AnnotationMarker';
 import { AnnotationPopup } from './AnnotationPopup';
+import { DevSessionStore } from '../../../store/DevSessionStore';
 import {
   IconAnnotate,
+  IconCapture,
   IconColor,
   IconDial,
   IconInfo,
   IconMove,
   IconSearch,
+  IconSend,
 } from './ToolbarIcons';
 
 export interface SolidAnnotationToolbarProps {
   projectKey?: string;
+  /** "New issue" URL (e.g. https://github.com/owner/repo/issues/new); enables the Send action. */
+  issueUrl?: string;
   onAnnotationAdd?: (annotation: Annotation) => void;
   onCopy?: (markdown: string) => void;
 }
 
-type ToolId = 'info' | 'move' | 'color' | 'dial' | 'annotate' | 'search' | null;
+type ToolId = 'info' | 'move' | 'color' | 'dial' | 'annotate' | 'capture' | 'search' | null;
 
 const HOWTO: { id: Exclude<ToolId, null | 'info'>; title: string; body: string }[] = [
   { id: 'move', title: 'Move', body: 'Click an element, then drag to nudge its position.' },
   { id: 'color', title: 'Color', body: 'Click an element to open the style editor (colors, type, spacing).' },
   { id: 'dial', title: 'Dial', body: 'Open live parameter dials for this page.' },
   { id: 'annotate', title: 'Annotate', body: 'Arm the tool, then right-click an element to pin a note. Copy or clear from the annotate tray.' },
+  { id: 'capture', title: 'Capture', body: 'Drag a rectangle over the page; the region is screenshotted and attached to a note.' },
   { id: 'search', title: 'Search', body: 'Find elements by visible text, then jump to a match.' },
 ];
+
+/** Everything on the clipboard in one paste: annotations + CSS/dial appendix. */
+function buildFullReport(annotationsMd: string): string {
+  const appendix = DevSessionStore.buildAgentReport();
+  return [annotationsMd, appendix].filter((s) => s.trim()).join('\n\n---\n\n');
+}
+
+/** Prefilled new-issue URL; body is trimmed to stay under URL length limits. */
+function buildIssueUrl(base: string, body: string): string {
+  const url = new URL(base);
+  url.searchParams.set('title', `Page feedback: ${location.pathname}`);
+  const max = 6000;
+  url.searchParams.set(
+    'body',
+    body.length > max ? `${body.slice(0, max)}\n\n_…truncated; full report on the clipboard._` : body,
+  );
+  return url.toString();
+}
 
 function prefersDark(): boolean {
   return typeof window !== 'undefined'
@@ -91,6 +115,7 @@ export function AnnotationToolbar(props: SolidAnnotationToolbarProps) {
   const [tool, setTool] = createSignal<ToolId>(null);
   const [searchQuery, setSearchQuery] = createSignal('');
   const [searchHits, setSearchHits] = createSignal<{ el: HTMLElement; label: string }[]>([]);
+  const [copiedAll, setCopiedAll] = createSignal(false);
   const moveTool = new MoveTool();
 
   onMount(() => {
@@ -115,11 +140,26 @@ export function AnnotationToolbar(props: SolidAnnotationToolbarProps) {
 
   const selectTool = (next: ToolId) => {
     const current = tool();
+
+    // Capture is a one-shot action, not a mode: run the drag-select flow,
+    // then land in annotate mode so the new pin (and composer) are visible.
+    if (next === 'capture') {
+      moveTool.stop();
+      if (current === 'dial') setDialsOpen(false);
+      void store.captureRegionAnnotation().then((ok) => {
+        if (ok) {
+          setTool('annotate');
+          store.setActive(true);
+        }
+      });
+      return;
+    }
+
     // Toggle off
     if (current === next) {
       setTool(null);
       store.setActive(false);
-      store.setPending(null);
+      store.cancelPending();
       store.setEditingId(null);
       if (next === 'dial') setDialsOpen(false);
       moveTool.stop();
@@ -127,7 +167,7 @@ export function AnnotationToolbar(props: SolidAnnotationToolbarProps) {
     }
 
     moveTool.stop();
-    store.setPending(null);
+    store.cancelPending();
     store.setEditingId(null);
 
     if (next !== 'annotate') store.setActive(false);
@@ -185,7 +225,7 @@ export function AnnotationToolbar(props: SolidAnnotationToolbarProps) {
       if (e.key !== 'Escape') return;
       setTool(null);
       store.setActive(false);
-      store.setPending(null);
+      store.cancelPending();
       store.setEditingId(null);
       setDialsOpen(false);
       moveTool.stop();
@@ -276,6 +316,9 @@ export function AnnotationToolbar(props: SolidAnnotationToolbarProps) {
           {toolButton('color', 'Color / styles', <IconColor />)}
           {toolButton('dial', 'Open dials', <IconDial />)}
           {toolButton('annotate', 'Annotate', <IconAnnotate />, { badge: count })}
+          <Show when={store.captureSupported()}>
+            {toolButton('capture', 'Capture region', <IconCapture />)}
+          </Show>
           {toolButton('search', 'Search elements', <IconSearch />)}
         </div>
 
@@ -305,14 +348,35 @@ export function AnnotationToolbar(props: SolidAnnotationToolbarProps) {
             </span>
             <button
               type="button"
-              disabled={count() === 0}
+              title="Copy notes + CSS/dial changes as markdown for an agent"
               onClick={async () => {
-                const ok = await store.copyMarkdown();
-                if (ok) props.onCopy?.(store.markdown());
+                const report = buildFullReport(store.markdown());
+                if (!report.trim()) return;
+                await navigator.clipboard?.writeText(report);
+                setCopiedAll(true);
+                window.setTimeout(() => setCopiedAll(false), 1500);
+                props.onCopy?.(report);
               }}
             >
-              {store.copied() ? 'Copied' : 'Copy'}
+              {copiedAll() ? 'Copied' : 'Copy'}
             </button>
+            <Show when={props.issueUrl}>
+              {(issueUrl) => (
+                <button
+                  type="button"
+                  title="Open a prefilled issue with this feedback (also copies it)"
+                  onClick={async () => {
+                    const report = buildFullReport(store.markdown());
+                    if (!report.trim()) return;
+                    await navigator.clipboard?.writeText(report).catch(() => {});
+                    window.open(buildIssueUrl(issueUrl(), report), '_blank', 'noopener');
+                  }}
+                >
+                  <IconSend />
+                  Send
+                </button>
+              )}
+            </Show>
             <button type="button" disabled={count() === 0} onClick={() => store.clearAll()}>
               Clear
             </button>
@@ -393,7 +457,8 @@ export function AnnotationToolbar(props: SolidAnnotationToolbarProps) {
           {(p) => (
             <AnnotationPopup
               pending={p()}
-              onCancel={() => store.setPending(null)}
+              screenshotUrl={store.screenshotFor(p())}
+              onCancel={() => store.cancelPending()}
               onSubmit={(comment) => {
                 const before = store.annotations().length;
                 store.addAnnotation(comment);
@@ -410,6 +475,7 @@ export function AnnotationToolbar(props: SolidAnnotationToolbarProps) {
           {(p) => (
             <AnnotationPopup
               pending={p()}
+              screenshotUrl={editing() ? store.screenshotFor(editing()!) : null}
               initialComment={editing()?.comment ?? ''}
               submitLabel="Save"
               onCancel={() => store.setEditingId(null)}

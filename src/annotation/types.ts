@@ -66,6 +66,10 @@ export type Annotation = {
 
   // Local-only sync tracking (not sent to server)
   _syncedTo?: string; // Session ID this annotation was synced to
+
+  // Local-only region screenshot captured with this annotation (see
+  // annotation/utils/screenshot-store.ts). Image data stays in localStorage.
+  screenshotId?: string;
 };
 
 // -----------------------------------------------------------------------------

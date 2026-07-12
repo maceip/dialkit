@@ -95,6 +95,9 @@ export function generateOutput(
       if (a.reactComponents) {
         output += `**React:** ${a.reactComponents}\n`;
       }
+      if (a.screenshotId) {
+        output += `**Screenshot:** region capture attached (stored locally, id \`${a.screenshotId}\`)\n`;
+      }
       output += `**Feedback:** ${a.comment}\n\n`;
     } else {
       // standard and detailed
@@ -119,6 +122,9 @@ export function generateOutput(
       }
       if (detailLevel === "detailed" && a.nearbyText && !a.selectedText) {
         output += `**Context:** ${a.nearbyText.slice(0, 100)}\n`;
+      }
+      if (a.screenshotId) {
+        output += `**Screenshot:** region capture attached (stored locally, id \`${a.screenshotId}\`)\n`;
       }
       output += `**Feedback:** ${a.comment}\n\n`;
     }

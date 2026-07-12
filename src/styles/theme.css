@@ -1732,6 +1732,36 @@
   font-size: 11px;
 }
 
+.dialkit-dev-color-field {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+}
+
+.dialkit-dev-color-field input {
+  flex: 1;
+  min-width: 0;
+}
+
+.dialkit-dev-eyedropper {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.06);
+  color: inherit;
+  cursor: pointer;
+  padding: 0;
+}
+
+.dialkit-dev-eyedropper:hover {
+  background: rgba(255, 255, 255, 0.14);
+}
+
 .dialkit-dev-css-toolbar {
   display: flex;
   flex-wrap: wrap;

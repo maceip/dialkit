@@ -76,3 +76,21 @@ export function IconSearch() {
     </svg>
   );
 }
+
+export function IconCapture() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M4 8V6a2 2 0 0 1 2-2h2M16 4h2a2 2 0 0 1 2 2v2M20 16v2a2 2 0 0 1-2 2h-2M8 20H6a2 2 0 0 1-2-2v-2" {...stroke} />
+      <circle cx="12" cy="12" r="3.2" {...stroke} />
+    </svg>
+  );
+}
+
+export function IconSend() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M4.5 11.2 19.5 4.8c.5-.2 1 .3.8.8l-6.4 15c-.2.5-.9.5-1.1 0l-2.3-5.3a1 1 0 0 0-.5-.5L4.5 12.3c-.5-.2-.5-.9 0-1.1Z" {...stroke} />
+      <path d="M10.6 13.4 15 9" {...stroke} />
+    </svg>
+  );
+}

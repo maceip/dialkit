@@ -6,6 +6,16 @@ import {
   saveAnnotations,
   setAnnotationProjectKey,
 } from '../../annotation/utils/storage';
+import {
+  deleteScreenshot,
+  loadScreenshot,
+  saveScreenshot,
+} from '../../annotation/utils/screenshot-store';
+import {
+  captureRegion,
+  selectRegion,
+  supportsCapture,
+} from '../../annotation/utils/region-capture';
 import { generateOutput } from '../../annotation/utils/generate-output';
 import type { OutputDetailLevel } from '../../annotation/output-types';
 import {
@@ -26,6 +36,7 @@ export type PendingAnnotation = {
   nearbyText?: string;
   cssClasses?: string;
   isFixed?: boolean;
+  screenshotId?: string;
 };
 
 function uid(): string {
@@ -114,10 +125,67 @@ export function createAnnotationStore(projectKey = 'default') {
       nearbyText: p.nearbyText,
       cssClasses: p.cssClasses,
       isFixed: p.isFixed,
+      screenshotId: p.screenshotId,
     };
     persist([annotation, ...annotations()]);
     setPending(null);
   };
+
+  /** Discard the pending note; drops its captured region so no orphan lingers. */
+  const cancelPending = () => {
+    const p = pending();
+    if (p?.screenshotId) deleteScreenshot(pathname(), p.screenshotId);
+    setPending(null);
+  };
+
+  /**
+   * Region-capture flow: drag a rectangle, grab the tab pixels for it, store
+   * the webp in localStorage, and open the note composer for the element
+   * under the region's center with the screenshot linked.
+   */
+  const captureRegionAnnotation = async (): Promise<boolean> => {
+    if (pending() || editingId()) return false;
+    const rect = await selectRegion();
+    if (!rect) return false;
+
+    const dataUrl = await captureRegion(rect);
+
+    const cx = rect.x + rect.width / 2;
+    const cy = rect.y + rect.height / 2;
+    let el = document.elementFromPoint(cx, cy);
+    if (el && isAnnotationUi(el)) el = document.body;
+    const target = (el instanceof HTMLElement ? el : el?.parentElement) ?? document.body;
+
+    const identified = identifyElement(target);
+    const isFixed = ['fixed', 'sticky'].includes(getComputedStyle(target).position);
+
+    let screenshotId: string | undefined;
+    if (dataUrl) {
+      screenshotId = uid();
+      if (!saveScreenshot(pathname(), screenshotId, dataUrl)) screenshotId = undefined;
+    }
+
+    setPending({
+      x: (cx / window.innerWidth) * 100,
+      y: isFixed ? cy : cy + window.scrollY,
+      element: identified.name,
+      elementPath: getElementPath(target),
+      boundingBox: {
+        x: rect.x,
+        y: isFixed ? rect.y : rect.y + window.scrollY,
+        width: rect.width,
+        height: rect.height,
+      },
+      nearbyText: getNearbyText(target) || undefined,
+      cssClasses: getElementClasses(target) || undefined,
+      isFixed,
+      screenshotId,
+    });
+    return true;
+  };
+
+  const screenshotFor = (a: Pick<Annotation, 'screenshotId'>): string | null =>
+    a.screenshotId ? loadScreenshot(pathname(), a.screenshotId) : null;
 
   const updateAnnotation = (id: string, comment: string) => {
     persist(
@@ -127,13 +195,18 @@ export function createAnnotationStore(projectKey = 'default') {
   };
 
   const deleteAnnotation = (id: string) => {
+    const doomed = annotations().find((a) => a.id === id);
+    if (doomed?.screenshotId) deleteScreenshot(pathname(), doomed.screenshotId);
     persist(annotations().filter((a) => a.id !== id));
     setEditingId(null);
   };
 
   const clearAll = () => {
+    for (const a of annotations()) {
+      if (a.screenshotId) deleteScreenshot(pathname(), a.screenshotId);
+    }
+    cancelPending();
     persist([]);
-    setPending(null);
     setEditingId(null);
   };
 
@@ -179,6 +252,7 @@ export function createAnnotationStore(projectKey = 'default') {
     annotations,
     pending,
     setPending,
+    cancelPending,
     editingId,
     setEditingId,
     copied,
@@ -192,6 +266,9 @@ export function createAnnotationStore(projectKey = 'default') {
     copyMarkdown,
     reloadFromStorage,
     attachPageListeners,
+    captureRegionAnnotation,
+    captureSupported: supportsCapture,
+    screenshotFor,
   };
 }
 

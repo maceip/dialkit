@@ -8,6 +8,7 @@ export function AnnotationPopup(props: {
   initialComment?: string;
   submitLabel?: string;
   onDelete?: () => void;
+  screenshotUrl?: string | null;
 }) {
   const [text, setText] = createSignal(props.initialComment ?? '');
   const scrollY = () => (typeof window !== 'undefined' ? window.scrollY : 0);
@@ -34,6 +35,9 @@ export function AnnotationPopup(props: {
         <div style={{ 'font-size': '12px', color: 'var(--dk-ann-muted)', 'margin-bottom': '8px' }}>
           “{props.pending.selectedText}”
         </div>
+      </Show>
+      <Show when={props.screenshotUrl}>
+        {(url) => <img class="dk-ann-popup-shot" src={url()} alt="Captured region" />}
       </Show>
       <textarea
         placeholder="What should change?"
