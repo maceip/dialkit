@@ -221,7 +221,7 @@ export function AnnotationToolbar(props: SolidAnnotationToolbarProps) {
     const pos = railPos();
     if (pos && typeof window !== 'undefined') {
       const rect = railRef?.getBoundingClientRect();
-      const railW = rect?.width ?? 52;
+      const railW = rect?.width ?? 44;
       const railH = rect?.height ?? 320;
       const flyoutW = 292;
       const rightOfRail = pos.x + railW + 12;
