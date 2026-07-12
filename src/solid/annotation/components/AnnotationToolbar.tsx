@@ -19,10 +19,21 @@ import { AnnotationMarker } from './AnnotationMarker';
 import { AnnotationPopup } from './AnnotationPopup';
 import { DevSessionStore } from '../../../store/DevSessionStore';
 import {
+  clampRailPos,
+  DEFAULT_ACCENT,
+  loadAccent,
+  loadRailPos,
+  RAIL_ACCENTS,
+  saveAccent,
+  saveRailPos,
+  type RailPos,
+} from '../railPrefs';
+import {
   IconAnnotate,
   IconCapture,
   IconColor,
   IconDial,
+  IconGrip,
   IconInfo,
   IconMove,
   IconSearch,
@@ -116,7 +127,78 @@ export function AnnotationToolbar(props: SolidAnnotationToolbarProps) {
   const [searchQuery, setSearchQuery] = createSignal('');
   const [searchHits, setSearchHits] = createSignal<{ el: HTMLElement; label: string }[]>([]);
   const [copiedAll, setCopiedAll] = createSignal(false);
+  const [railPos, setRailPos] = createSignal<RailPos | null>(loadRailPos());
+  const [accent, setAccent] = createSignal(loadAccent() ?? DEFAULT_ACCENT);
   const moveTool = new MoveTool();
+  let railRef: HTMLDivElement | undefined;
+
+  const onGripPointerDown = (e: PointerEvent) => {
+    if (!railRef || e.button !== 0) return;
+    e.preventDefault();
+    const rect = railRef.getBoundingClientRect();
+    const offsetX = e.clientX - rect.left;
+    const offsetY = e.clientY - rect.top;
+    const grip = e.currentTarget as HTMLElement;
+    grip.setPointerCapture(e.pointerId);
+
+    const onDragMove = (ev: PointerEvent) => {
+      setRailPos(clampRailPos(
+        { x: ev.clientX - offsetX, y: ev.clientY - offsetY },
+        rect.width,
+        rect.height,
+      ));
+    };
+    const onDragEnd = () => {
+      grip.removeEventListener('pointermove', onDragMove);
+      grip.removeEventListener('pointerup', onDragEnd);
+      grip.removeEventListener('pointercancel', onDragEnd);
+      saveRailPos(railPos());
+    };
+    grip.addEventListener('pointermove', onDragMove);
+    grip.addEventListener('pointerup', onDragEnd);
+    grip.addEventListener('pointercancel', onDragEnd);
+  };
+
+  const dockRail = () => {
+    setRailPos(null);
+    saveRailPos(null);
+  };
+
+  const pickAccent = (value: string) => {
+    setAccent(value);
+    saveAccent(value);
+  };
+
+  const railStyle = () => {
+    const pos = railPos();
+    return pos ? { left: `${pos.x}px`, top: `${pos.y}px`, transform: 'none' } : undefined;
+  };
+
+  /**
+   * Flyouts default to sitting beside the docked rail (CSS fallbacks). When
+   * the rail is dragged, follow it — flipping to the rail's left side near
+   * the right viewport edge. Vertically they stay centered on the rail
+   * (translateY(-50%) from CSS); the center is clamped so tall flyouts
+   * keep their edges on screen.
+   */
+  const rootStyle = createMemo<JSX.CSSProperties>(() => {
+    const style: JSX.CSSProperties = {
+      display: 'contents',
+      '--dk-ann-accent': accent(),
+    };
+    const pos = railPos();
+    if (pos && typeof window !== 'undefined') {
+      const rect = railRef?.getBoundingClientRect();
+      const railW = rect?.width ?? 52;
+      const railH = rect?.height ?? 320;
+      const flyoutW = 292;
+      const rightOfRail = pos.x + railW + 12;
+      const overflowsRight = rightOfRail + flyoutW > window.innerWidth - 8;
+      style['--dk-fly-left'] = `${overflowsRight ? Math.max(8, pos.x - flyoutW - 12) : rightOfRail}px`;
+      style['--dk-fly-top'] = `clamp(240px, ${Math.round(pos.y + railH / 2)}px, calc(100vh - 240px))`;
+    }
+    return style;
+  });
 
   onMount(() => {
     ensureAnnotationStyles();
@@ -127,12 +209,20 @@ export function AnnotationToolbar(props: SolidAnnotationToolbarProps) {
       setDialsOpen(true);
       setTool('dial');
     };
+    const onResize = () => {
+      const pos = railPos();
+      if (!pos || !railRef) return;
+      const r = railRef.getBoundingClientRect();
+      setRailPos(clampRailPos(pos, r.width, r.height));
+    };
     window.addEventListener('scroll', onScroll, { passive: true });
     window.addEventListener('dialkit:open-dials', onOpenDials);
+    window.addEventListener('resize', onResize);
     mq?.addEventListener?.('change', onTheme);
     onCleanup(() => {
       window.removeEventListener('scroll', onScroll);
       window.removeEventListener('dialkit:open-dials', onOpenDials);
+      window.removeEventListener('resize', onResize);
       mq?.removeEventListener?.('change', onTheme);
       moveTool.stop();
     });
@@ -303,14 +393,25 @@ export function AnnotationToolbar(props: SolidAnnotationToolbarProps) {
       <div
         data-dialkit-annotation-root
         data-theme={themeDark() ? 'dark' : 'light'}
-        style={{ display: 'contents' }}
+        style={rootStyle()}
       >
         <div
+          ref={railRef}
           class="dk-ann-toolbar"
           data-dialkit-annotation-toolbar
           data-testid="dialkit-annotation-toolbar"
           data-orientation="vertical"
+          style={railStyle()}
         >
+          <div
+            class="dk-ann-grip"
+            data-testid="dialkit-rail-grip"
+            title="Drag to move — double-click to dock"
+            onPointerDown={onGripPointerDown}
+            onDblClick={dockRail}
+          >
+            <IconGrip />
+          </div>
           {toolButton('info', 'How to use', <IconInfo />)}
           {toolButton('move', 'Move', <IconMove />)}
           {toolButton('color', 'Color / styles', <IconColor />)}
@@ -335,6 +436,23 @@ export function AnnotationToolbar(props: SolidAnnotationToolbarProps) {
                 )}
               </For>
             </ul>
+            <div class="dk-ann-accent-row" role="group" aria-label="Toolbar color">
+              <span>Color</span>
+              <For each={RAIL_ACCENTS}>
+                {(opt) => (
+                  <button
+                    type="button"
+                    class="dk-ann-swatch"
+                    title={opt.label}
+                    aria-label={opt.label}
+                    data-active={accent() === opt.value ? 'true' : 'false'}
+                    data-testid={`dialkit-accent-${opt.label.toLowerCase()}`}
+                    style={{ background: opt.value }}
+                    onClick={() => pickAccent(opt.value)}
+                  />
+                )}
+              </For>
+            </div>
           </div>
         </Show>
 
