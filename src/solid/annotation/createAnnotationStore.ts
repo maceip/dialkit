@@ -79,13 +79,7 @@ export function createAnnotationStore(projectKey = 'default') {
     setAnnotations(loadAnnotations(pathname()));
   };
 
-  const buildPendingFromEvent = (e: MouseEvent): PendingAnnotation | null => {
-    const target = e.target;
-    if (!(target instanceof Element) || isAnnotationUi(target)) return null;
-
-    const el = target instanceof HTMLElement ? target : target.parentElement;
-    if (!el) return null;
-
+  const buildPendingFromElement = (el: HTMLElement): PendingAnnotation => {
     const selection = window.getSelection()?.toString().trim() || undefined;
     const rect = el.getBoundingClientRect();
     const identified = identifyElement(el);
@@ -107,6 +101,11 @@ export function createAnnotationStore(projectKey = 'default') {
       cssClasses: getElementClasses(el) || undefined,
       isFixed,
     };
+  };
+
+  const resolvePageElement = (target: EventTarget | null): HTMLElement | null => {
+    if (!(target instanceof Element) || isAnnotationUi(target)) return null;
+    return target instanceof HTMLElement ? target : target.parentElement;
   };
 
   const addAnnotation = (comment: string) => {
@@ -222,6 +221,15 @@ export function createAnnotationStore(projectKey = 'default') {
     return false;
   };
 
+  /** Pin a note on an element directly (e.g. from the dev-session context menu). */
+  const pinElement = (target: Element) => {
+    const el = resolvePageElement(target);
+    if (!el) return;
+    setEditingId(null);
+    cancelPending();
+    setPending(buildPendingFromElement(el));
+  };
+
   /**
    * Armed annotate mode places pins on RIGHT-click, so ordinary left-clicks
    * (links, buttons) keep working while the mode is on. Registered on window
@@ -232,13 +240,17 @@ export function createAnnotationStore(projectKey = 'default') {
     if (typeof window === 'undefined') return () => {};
 
     const onContextMenu = (e: MouseEvent) => {
-      if (!active() || pending() || editingId()) return;
-      if (e.target instanceof Element && isAnnotationUi(e.target)) return;
-      const next = buildPendingFromEvent(e);
-      if (!next) return;
+      if (!active()) return;
+      const el = resolvePageElement(e.target);
+      if (!el) return;
+      // Armed mode owns right-click on page content outright: even with a
+      // composer already open, swallow the event and retarget the pin rather
+      // than letting the dev-session menu open on top of the annotate flow.
       e.preventDefault();
       e.stopPropagation();
-      setPending(next);
+      setEditingId(null);
+      cancelPending();
+      setPending(buildPendingFromElement(el));
     };
 
     window.addEventListener('contextmenu', onContextMenu, true);
@@ -265,6 +277,7 @@ export function createAnnotationStore(projectKey = 'default') {
     clearAll,
     copyMarkdown,
     reloadFromStorage,
+    pinElement,
     attachPageListeners,
     captureRegionAnnotation,
     captureSupported: supportsCapture,

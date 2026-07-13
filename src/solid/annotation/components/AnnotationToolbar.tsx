@@ -13,6 +13,7 @@ import type { Annotation } from '../../../annotation/types';
 import { getDevSessionHost } from '../../../dev-session/dev-session-host';
 import { MoveTool } from '../../../dev-session/layout-tools';
 import { createAnnotationStore, type PendingAnnotation } from '../createAnnotationStore';
+import { fromStore } from '../../primitives';
 import { dialsOpen, setDialsOpen } from '../toolChrome';
 import { ensureAnnotationStyles } from '../injectCss';
 import { AnnotationMarker } from './AnnotationMarker';
@@ -242,6 +243,18 @@ export function AnnotationToolbar(props: SolidAnnotationToolbarProps) {
       setDialsOpen(true);
       setTool('dial');
     };
+    // "Pin note" in the dev-session context menu: arm annotate and open the
+    // composer on the element that was right-clicked.
+    const onAnnotateElement = (e: Event) => {
+      const el = (e as CustomEvent<{ element?: Element }>).detail?.element;
+      if (!(el instanceof Element)) return;
+      moveTool.stop();
+      setDialsOpen(false);
+      setRailCollapsed(false);
+      setTool('annotate');
+      store.setActive(true);
+      store.pinElement(el);
+    };
     const onResize = () => {
       const pos = railPos();
       if (!pos || !railRef) return;
@@ -252,12 +265,14 @@ export function AnnotationToolbar(props: SolidAnnotationToolbarProps) {
     const unwatchPage = watchPageTheme(() => setPageDark(detectPageIsDark()));
     window.addEventListener('scroll', onScroll, { passive: true });
     window.addEventListener('dialkit:open-dials', onOpenDials);
+    window.addEventListener('dialkit:annotate-element', onAnnotateElement);
     window.addEventListener('resize', onResize);
     mq?.addEventListener?.('change', onTheme);
     onCleanup(() => {
       unwatchPage();
       window.removeEventListener('scroll', onScroll);
       window.removeEventListener('dialkit:open-dials', onOpenDials);
+      window.removeEventListener('dialkit:annotate-element', onAnnotateElement);
       window.removeEventListener('resize', onResize);
       mq?.removeEventListener?.('change', onTheme);
       moveTool.stop();
@@ -405,6 +420,14 @@ export function AnnotationToolbar(props: SolidAnnotationToolbarProps) {
 
   const count = createMemo(() => store.annotations().length);
 
+  // The Copy/Send report is notes + the CSS/dial appendix; only offer them
+  // when there is actually something to export.
+  const hasSessionChanges = fromStore(
+    () => DevSessionStore.getPendingChanges().length > 0 || DevSessionStore.getPendingCssOverrides().length > 0,
+    (notify) => DevSessionStore.subscribe(notify)
+  );
+  const reportEmpty = createMemo(() => count() === 0 && !hasSessionChanges());
+
   const runSearch = (value: string) => {
     setSearchQuery(value);
     setSearchHits(findElementsByText(value));
@@ -546,6 +569,7 @@ export function AnnotationToolbar(props: SolidAnnotationToolbarProps) {
             <button
               type="button"
               title="Copy notes + CSS/dial changes as markdown for an agent"
+              disabled={reportEmpty()}
               onClick={async () => {
                 const report = buildFullReport(store.markdown());
                 if (!report.trim()) return;
@@ -562,6 +586,7 @@ export function AnnotationToolbar(props: SolidAnnotationToolbarProps) {
                 <button
                   type="button"
                   title="Open a prefilled issue with this feedback (also copies it)"
+                  disabled={reportEmpty()}
                   onClick={async () => {
                     const report = buildFullReport(store.markdown());
                     if (!report.trim()) return;

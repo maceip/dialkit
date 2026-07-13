@@ -186,6 +186,7 @@ export class DevSessionHost {
     menu.className = 'dialkit-dev-context-menu';
     menu.hidden = true;
     menu.innerHTML = `
+      <button type="button" data-action="annotate">Pin note</button>
       <button type="button" data-action="css">Edit styles</button>
       <button type="button" data-action="dial">Open dial panel</button>
       <button type="button" data-action="move">Move</button>
@@ -194,6 +195,14 @@ export class DevSessionHost {
       const btn = (e.target as Element).closest('[data-action]');
       if (!btn || !(this.targetEl instanceof HTMLElement)) return;
       const action = btn.getAttribute('data-action');
+      if (action === 'annotate') {
+        this.contextMenu.hidden = true;
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent('dialkit:annotate-element', {
+            detail: { element: this.targetEl },
+          }));
+        }
+      }
       if (action === 'css') this.openCssInspector(this.targetEl);
       if (action === 'dial' && this.targetEl instanceof HTMLElement && this.targetInfo) {
         registerElementDialPanel(this.targetEl, this.targetInfo);
