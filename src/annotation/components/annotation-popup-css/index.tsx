@@ -95,8 +95,8 @@ export const AnnotationPopupCSS = forwardRef<AnnotationPopupCSSHandle, Annotatio
     const [isStylesExpanded, setIsStylesExpanded] = useState(false); // Computed styles accordion state
     const textareaRef = useRef<HTMLTextAreaElement>(null);
     const popupRef = useRef<HTMLDivElement>(null);
-    const cancelTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-    const shakeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const cancelTimerRef = useRef<ReturnType<typeof originalSetTimeout> | null>(null);
+    const shakeTimerRef = useRef<ReturnType<typeof originalSetTimeout> | null>(null);
 
     // Sync with parent exit state
     useEffect(() => {

@@ -24,14 +24,21 @@ const NOT_SELECTORS = EXCLUDE_ATTRS
 const STYLE_ID = "feedback-freeze-styles";
 const STATE_KEY = "__dialkit_annotation_freeze";
 
+type TimerId = number | ReturnType<typeof globalThis.setTimeout>;
+type TimerScheduler = (
+  handler: TimerHandler,
+  timeout?: number,
+  ...args: any[]
+) => TimerId;
+
 // ---------------------------------------------------------------------------
 // Shared mutable state on window (survives HMR module re-execution)
 // ---------------------------------------------------------------------------
 interface FreezeState {
   frozen: boolean;
   installed: boolean;
-  origSetTimeout: typeof setTimeout;
-  origSetInterval: typeof setInterval;
+  origSetTimeout: TimerScheduler;
+  origSetInterval: TimerScheduler;
   origRAF: typeof requestAnimationFrame;
   // Queues live on window so they survive HMR module re-execution
   pausedAnimations: Animation[];
@@ -45,8 +52,10 @@ function getState(): FreezeState {
     return {
       frozen: false,
       installed: true, // prevent patching on server
-      origSetTimeout: setTimeout,
-      origSetInterval: setInterval,
+      origSetTimeout: (handler, timeout, ...args) =>
+        globalThis.setTimeout(handler as (...args: any[]) => void, timeout, ...args),
+      origSetInterval: (handler, timeout, ...args) =>
+        globalThis.setInterval(handler as (...args: any[]) => void, timeout, ...args),
       origRAF: (cb: FrameRequestCallback) => 0 as any,
       pausedAnimations: [],
       frozenTimeoutQueue: [],
@@ -76,8 +85,10 @@ const _s = getState();
 // ---------------------------------------------------------------------------
 if (typeof window !== "undefined" && !_s.installed) {
   // Save the real functions
-  _s.origSetTimeout = window.setTimeout.bind(window);
-  _s.origSetInterval = window.setInterval.bind(window);
+  const browserSetTimeout = window.setTimeout.bind(window);
+  const browserSetInterval = window.setInterval.bind(window);
+  _s.origSetTimeout = browserSetTimeout;
+  _s.origSetInterval = browserSetInterval;
   _s.origRAF = window.requestAnimationFrame.bind(window);
 
   // Patch setTimeout — queue callback when frozen (replayed on unfreeze)
@@ -85,11 +96,11 @@ if (typeof window !== "undefined" && !_s.installed) {
     handler: TimerHandler,
     timeout?: number,
     ...args: any[]
-  ): ReturnType<typeof setTimeout> => {
+  ): number => {
     if (typeof handler === "string") {
-      return _s.origSetTimeout(handler, timeout);
+      return browserSetTimeout(handler, timeout);
     }
-    return _s.origSetTimeout(
+    return browserSetTimeout(
       (...a: any[]) => {
         if (_s.frozen) {
           _s.frozenTimeoutQueue.push(() => (handler as Function)(...a));
@@ -107,11 +118,11 @@ if (typeof window !== "undefined" && !_s.installed) {
     handler: TimerHandler,
     timeout?: number,
     ...args: any[]
-  ): ReturnType<typeof setInterval> => {
+  ): number => {
     if (typeof handler === "string") {
-      return _s.origSetInterval(handler, timeout);
+      return browserSetInterval(handler, timeout);
     }
-    return _s.origSetInterval(
+    return browserSetInterval(
       (...a: any[]) => {
         if (!_s.frozen) (handler as Function)(...a);
       },
