@@ -28,7 +28,7 @@ test.describe('annotation toolbar — post + persist', () => {
   });
 
   test('landing navigates to demo with toolbar mounted', async ({ page }) => {
-    await page.goto('/');
+    await page.goto('./');
     await expect(page.getByRole('heading', { name: /design in the browser/i })).toBeVisible();
     await page.getByRole('link', { name: /open interactive demo/i }).click();
     await expect(page).toHaveURL(/\/demo$/);
