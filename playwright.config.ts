@@ -1,5 +1,8 @@
 import { defineConfig, devices } from '@playwright/test';
 
+const exampleBasePath = '/dialkit/';
+const exampleBaseURL = `http://127.0.0.1:4173${exampleBasePath}`;
+
 export default defineConfig({
   testDir: 'e2e',
   fullyParallel: true,
@@ -8,7 +11,7 @@ export default defineConfig({
   testTimeout: 60_000,
   reporter: 'list',
   use: {
-    baseURL: 'http://127.0.0.1:4173',
+    baseURL: exampleBaseURL,
     trace: 'on-first-retry',
   },
   projects: [
@@ -19,7 +22,8 @@ export default defineConfig({
   ],
   webServer: {
     command: 'npm run build:example && cd example && npm run preview',
-    url: 'http://127.0.0.1:4173/demo',
+    url: `${exampleBaseURL}demo`,
+    env: { VITE_BASE: exampleBasePath },
     reuseExistingServer: !process.env.CI,
     timeout: 180_000,
   },

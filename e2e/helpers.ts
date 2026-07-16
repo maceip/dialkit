@@ -16,7 +16,7 @@ export async function tuckDialPanels(page: Page): Promise<void> {
 }
 
 export async function openDemo(page: Page): Promise<void> {
-  await page.goto('/demo');
+  await page.goto('./demo');
   await expect(page.getByTestId('demo-title')).toBeVisible({ timeout: 15_000 });
   await expect(annotationToolbar(page)).toBeVisible({ timeout: 15_000 });
   await tuckDialPanels(page);
