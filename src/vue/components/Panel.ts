@@ -45,7 +45,7 @@ export const Panel = defineComponent({
     const hasShortcuts = () => Object.keys(DialStore.getPanel(props.panel.id)?.shortcuts ?? {}).length > 0;
 
     let unsubscribe: (() => void) | undefined;
-    let copiedTimeout: ReturnType<typeof window.setTimeout> | null = null;
+    let copiedTimeout: number | null = null;
 
     onMounted(() => {
       unsubscribe = DialStore.subscribe(props.panel.id, () => {
