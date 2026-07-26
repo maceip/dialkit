@@ -489,9 +489,6 @@ def logo_centers_padded() -> dict[str, tuple[float, float]]:
     return {name: (x + pl, y + pt) for name, (x, y) in logo_centers_cropped().items()}
 
 
-LEGEND_BOX_HEIGHT = 108
-
-
 def _wrap_text(draw: ImageDraw.ImageDraw, text: str, font: ImageFont.FreeTypeFont, max_width: float) -> list[str]:
     words = text.split()
     if not words:
@@ -511,85 +508,104 @@ def _wrap_text(draw: ImageDraw.ImageDraw, text: str, font: ImageFont.FreeTypeFon
     return lines
 
 
-def draw_legend_compact(draw: ImageDraw.ImageDraw, x: int, y: int, width: int) -> int:
-    """Stacked legend for hub infographic — plain-English labels, no overflow."""
-    pad = 16
-    sample_w = 40
-    font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 9)
-    bold = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 9)
-    text_x = x + pad + sample_w
-    max_text_w = width - pad * 2 - sample_w
-    line_gap = 11
+def draw_legend_floating(draw: ImageDraw.ImageDraw, canvas_w: int, y: int) -> tuple[int, int, int, int]:
+    """Centered floating legend card — compact infographic style."""
+    card_w = 500
+    pad_x, pad_y = 18, 14
+    sample_w = 30
+    text_gap = 10
+    row_gap = 6
+    line_h = 11
+    radius = 12
+    font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 8)
+    bold = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 8)
+    text_x_offset = pad_x + sample_w + text_gap
+    max_text_w = card_w - text_x_offset - pad_x
 
     def solid(sx, sy, color):
-        draw.line([(sx, sy), (sx + 32, sy)], fill=color, width=3)
+        draw.line([(sx, sy), (sx + 24, sy)], fill=color, width=3)
 
     def dashed(sx, sy, color):
-        for i in range(0, 32, 6):
+        for i in range(0, 24, 5):
             draw.line([(sx + i, sy), (sx + i + 3, sy)], fill=color, width=3)
 
-    entries: list[tuple] = [
+    rows: list[tuple] = [
         (
             lambda sx, sy: solid(sx, sy, FAMILY_COLORS["corp"]),
-            "Solid line",
-            "Corporate or CEO direct ownership stakes in another signatory",
+            "Direct corporate or CEO ownership stake",
         ),
         (
             lambda sx, sy: dashed(sx, sy, FAMILY_COLORS["ceo_2hop"]),
-            "Dashed line",
-            "CEO indirect stake through a fund or GP, or a governance board seat (not equity)",
+            "Indirect CEO stake via fund, or governance board seat",
         ),
         (
             None,
-            "Red ring",
-            "Outbound hub whose ties are shown in each panel",
+            "Hub whose outbound ties are shown in each panel",
         ),
     ]
 
-    color_lines = _wrap_text(
-        draw,
-        "Line colors: Blue = corporate equity · Purple = CEO direct stake · "
-        "Orange = CEO stake via fund · Green = governance interlock",
-        font,
-        max_text_w,
-    )
+    wrapped_rows: list[tuple] = []
+    content_h = pad_y
+    for draw_sample, text in rows:
+        lines = _wrap_text(draw, text, font, max_text_w)
+        wrapped_rows.append((draw_sample, lines))
+        content_h += max(14, len(lines) * line_h) + row_gap
 
-    content_bottom = y + 10
-    for _, __, description in entries:
-        desc_lines = _wrap_text(draw, description, font, max_text_w)
-        content_bottom += 12 + len(desc_lines) * line_gap + 8
-    content_bottom += len(color_lines) * line_gap + 6
-    box_h = max(LEGEND_BOX_HEIGHT, content_bottom - y)
+    color_items = [
+        (FAMILY_COLORS["corp"], "Corporate"),
+        (FAMILY_COLORS["ceo_1hop"], "CEO direct"),
+        (FAMILY_COLORS["ceo_2hop"], "Via fund"),
+        (FAMILY_COLORS["gov"], "Governance"),
+    ]
+    content_h += 16 + pad_y
+    card_h = content_h
+    card_x = (canvas_w - card_w) // 2
 
+    # Soft drop shadow
     draw.rounded_rectangle(
-        (x, y, x + width, y + box_h),
-        radius=6,
-        fill=(255, 255, 255),
-        outline="#cccccc",
+        (card_x + 2, y + 3, card_x + card_w + 2, y + card_h + 3),
+        radius=radius,
+        fill="#e6e2dc",
+    )
+    draw.rounded_rectangle(
+        (card_x, y, card_x + card_w, y + card_h),
+        radius=radius,
+        fill="#ffffff",
+        outline="#d8d4ce",
         width=1,
     )
 
-    row_y = y + 10
-    for draw_sample, label, description in entries:
+    row_y = y + pad_y
+    for draw_sample, lines in wrapped_rows:
+        mid_y = row_y + max(7, (len(lines) * line_h) // 2)
         if draw_sample is not None:
-            draw_sample(x + pad, row_y + 8)
+            draw_sample(card_x + pad_x, mid_y)
         else:
-            ring_y = row_y + 2
             draw.ellipse(
-                (x + pad, ring_y + 2, x + pad + 14, ring_y + 16),
+                (card_x + pad_x, mid_y - 6, card_x + pad_x + 12, mid_y + 6),
                 outline=(220, 38, 38),
                 width=2,
             )
-        draw.text((text_x, row_y), label, fill=INK, font=bold)
-        for i, line in enumerate(_wrap_text(draw, description, font, max_text_w)):
-            draw.text((text_x, row_y + 12 + i * line_gap), line, fill=MUTED, font=font)
-        desc_lines = _wrap_text(draw, description, font, max_text_w)
-        row_y += 12 + len(desc_lines) * line_gap + 8
+        for i, line in enumerate(lines):
+            draw.text(
+                (card_x + text_x_offset, row_y + i * line_h),
+                line,
+                fill=INK,
+                font=font,
+            )
+        row_y += max(14, len(lines) * line_h) + row_gap
 
-    for i, line in enumerate(color_lines):
-        draw.text((x + pad, row_y + i * line_gap), line, fill=MUTED, font=font)
+    dot_x = card_x + pad_x
+    dot_y = row_y + 4
+    for color, label in color_items:
+        r = 4
+        cx = dot_x + r
+        cy = dot_y + r
+        draw.ellipse((cx - r, cy - r, cx + r, cy + r), fill=color)
+        draw.text((dot_x + r * 2 + 4, dot_y - 1), label, fill=MUTED, font=font)
+        dot_x += r * 2 + 4 + int(draw.textlength(label, font=font)) + 14
 
-    return box_h
+    return card_x, y, card_w, card_h
 
 
 def render_hub_panels(edges: list[dict]) -> Path:
@@ -605,25 +621,26 @@ def render_hub_panels(edges: list[dict]) -> Path:
     gap = 14
     margin = 20
     canvas_w = panel_w * 3 + gap * 2 + margin * 2
-    legend_w = canvas_w - margin * 2
-    title_h = 40
-    legend_h = LEGEND_BOX_HEIGHT
-    header_h = title_h + legend_h + 16
-    canvas_h = header_h + panel_h * 2 + gap + margin
+    title_h = 44
+    legend_gap = 10
+    panels_gap = 18
+
+    # Size canvas from layout; legend drawn on a scratch layer first for height.
+    scratch = Image.new("RGB", (canvas_w, 400), CREAM_RGB)
+    scratch_draw = ImageDraw.Draw(scratch)
+    title_font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSerif.ttf", 28)
+    _, legend_y, _, legend_h = draw_legend_floating(scratch_draw, canvas_w, title_h + legend_gap)
+    panels_y = legend_y + legend_h + panels_gap
+    canvas_h = panels_y + panel_h * 2 + gap + margin
 
     canvas = Image.new("RGB", (canvas_w, canvas_h), CREAM_RGB)
     draw = ImageDraw.Draw(canvas)
-    title_font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSerif.ttf", 28)
     label_font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 13)
     scale = panel_w / crop_w
 
     title_w = draw.textlength(HUB_INFOGRAPHIC_TITLE, font=title_font)
     draw.text(((canvas_w - title_w) / 2, 12), HUB_INFOGRAPHIC_TITLE, fill=INK, font=title_font)
-
-    legend_x = (canvas_w - legend_w) // 2
-    draw_legend_compact(draw, legend_x, title_h + 4, legend_w)
-
-    panels_y = header_h
+    draw_legend_floating(draw, canvas_w, title_h + legend_gap)
     for i, hub in enumerate(HUBS):
         col, row = i % 3, i // 3
         subset = [e for e in edges if e["src"] == hub]
