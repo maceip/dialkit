@@ -38,7 +38,7 @@ GRID = [
 SIGNATORIES = [name for row in GRID for name in row]
 SKIP_SUBTYPES = {"corporate_1hop_inbound", "external_investor_1hop"}
 
-GRID_TOP = 568
+GRID_TOP = 398
 GRID_BOTTOM = 1458
 GRID_LEFT = 52
 GRID_RIGHT = 1040
