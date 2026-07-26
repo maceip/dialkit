@@ -43,6 +43,9 @@ GRID_BOTTOM = 1458
 GRID_LEFT = 52
 GRID_RIGHT = 1040
 GRID_CROP = (38, 428, 1054, 1475)  # logo grid only — excludes title + signatory text
+PANEL_PAD = (28, 58, 28, 24)  # left, top, right, bottom — top pad keeps hub markers visible
+HUB_INFOGRAPHIC_TITLE = "Signatory cartel?"
+CREAM_RGB = (255, 249, 242)
 
 CREAM = "#FFF9F2"
 INK = "#1a1a1a"
@@ -472,14 +475,27 @@ def logo_centers_cropped() -> dict[str, tuple[float, float]]:
     return {name: (x - x0, y - y0) for name, (x, y) in build_logo_centers().items()}
 
 
-def draw_legend_box(draw: ImageDraw.ImageDraw, x: int, y: int, width: int) -> int:
-    """Draw a bordered legend; returns total height used."""
-    pad = 14
-    title_font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 12)
-    label_font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 11)
-    small_font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 10)
+def padded_logo_grid() -> Image.Image:
+    grid = logo_grid_base()
+    pl, pt, pr, pb = PANEL_PAD
+    w, h = grid.size
+    padded = Image.new("RGB", (w + pl + pr, h + pt + pb), CREAM_RGB)
+    padded.paste(grid, (pl, pt))
+    return padded
 
-    box_h = 118
+
+def logo_centers_padded() -> dict[str, tuple[float, float]]:
+    pl, pt, _, _ = PANEL_PAD
+    return {name: (x + pl, y + pt) for name, (x, y) in logo_centers_cropped().items()}
+
+
+def draw_legend_compact(draw: ImageDraw.ImageDraw, x: int, y: int, width: int) -> int:
+    """Compact horizontal legend for top of hub infographic."""
+    pad = 12
+    box_h = 56
+    font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 10)
+    bold = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 10)
+
     draw.rounded_rectangle(
         (x, y, x + width, y + box_h),
         radius=6,
@@ -487,47 +503,38 @@ def draw_legend_box(draw: ImageDraw.ImageDraw, x: int, y: int, width: int) -> in
         outline="#cccccc",
         width=1,
     )
-    draw.text((x + pad, y + 10), "Legend — edge types", fill=INK, font=title_font)
 
-    def solid_line(sx: int, sy: int, color: str, lw: int = 4):
-        draw.line([(sx, sy), (sx + 50, sy)], fill=color, width=lw)
+    def solid(sx, sy, color):
+        draw.line([(sx, sy), (sx + 36, sy)], fill=color, width=3)
 
-    def dashed_line(sx: int, sy: int, color: str, lw: int = 4):
-        for i in range(0, 50, 7):
-            draw.line([(sx + i, sy), (sx + i + 4, sy)], fill=color, width=lw)
+    def dashed(sx, sy, color):
+        for i in range(0, 36, 6):
+            draw.line([(sx + i, sy), (sx + i + 3, sy)], fill=color, width=3)
 
-    row1 = y + 34
-    row2 = y + 62
-    row3 = y + 88
+    cy = y + box_h // 2
     lx = x + pad
 
-    solid_line(lx, row1, FAMILY_COLORS["corp"])
-    draw.text((lx + 60, row1 - 8), "Solid line", fill=INK, font=label_font)
+    solid(lx, cy, FAMILY_COLORS["corp"])
+    draw.text((lx + 42, cy - 14), "Solid", fill=INK, font=bold)
+    draw.text((lx + 42, cy + 1), "Corporate / CEO 1-hop", fill=MUTED, font=font)
+
+    lx += 168
+    dashed(lx, cy, FAMILY_COLORS["ceo_2hop"])
+    draw.text((lx + 42, cy - 14), "Dashed", fill=INK, font=bold)
+    draw.text((lx + 42, cy + 1), "CEO 2-hop / governance", fill=MUTED, font=font)
+
+    lx += 168
+    draw.ellipse((lx, cy - 8, lx + 16, cy + 8), outline=(220, 38, 38), width=2)
+    draw.text((lx + 22, cy - 6), "Hub origin", fill=MUTED, font=font)
+
+    lx += 100
+    draw.text((lx, cy - 14), "Colors", fill=INK, font=bold)
     draw.text(
-        (lx + 60, row1 + 6),
-        "Corporate / CVC equity  ·  CEO 1-hop direct",
+        (lx, cy + 1),
+        "Blue corp · Purple CEO · Orange 2-hop · Green gov",
         fill=MUTED,
-        font=small_font,
+        font=font,
     )
-
-    dashed_line(lx, row2, FAMILY_COLORS["ceo_2hop"])
-    draw.text((lx + 60, row2 - 8), "Dashed line", fill=INK, font=label_font)
-    draw.text(
-        (lx + 60, row2 + 6),
-        "CEO 2-hop via fund / GP  ·  Governance board interlock",
-        fill=MUTED,
-        font=small_font,
-    )
-
-    draw.ellipse((lx, row3 - 8, lx + 16, row3 + 8), outline=(220, 38, 38), width=2)
-    draw.text((lx + 24, row3 - 7), "Red ring marks the outbound hub on each panel", fill=MUTED, font=small_font)
-
-    mid = x + width // 2 + 10
-    solid_line(mid, row1, FAMILY_COLORS["ceo_1hop"])
-    draw.text((mid + 60, row1 - 8), "Colors", fill=INK, font=label_font)
-    draw.text((mid + 60, row1 + 6), "Blue = corporate   Purple = CEO 1-hop", fill=MUTED, font=small_font)
-    dashed_line(mid, row2, FAMILY_COLORS["gov"])
-    draw.text((mid + 60, row2 + 6), "Orange = CEO 2-hop   Green = governance", fill=MUTED, font=small_font)
 
     return box_h
 
@@ -536,27 +543,34 @@ def render_hub_panels(edges: list[dict]) -> Path:
     build_logo_centers.cache_clear()
     logo_grid_base.cache_clear()
 
-    grid_base = logo_grid_base()
-    logo_centers = logo_centers_cropped()
+    grid_base = padded_logo_grid()
+    logo_centers = logo_centers_padded()
     crop_w, crop_h = grid_base.size
 
     panel_w = 360
     panel_h = int(panel_w * crop_h / crop_w)
     gap = 14
-    header_h = 56
-    legend_h = 140
     margin = 20
+    legend_w = 620
+    title_h = 40
+    legend_h = 64
+    header_h = title_h + legend_h + 16
     canvas_w = panel_w * 3 + gap * 2 + margin * 2
-    canvas_h = header_h + panel_h * 2 + gap + legend_h + margin
+    canvas_h = header_h + panel_h * 2 + gap + margin
 
-    canvas = Image.new("RGB", (canvas_w, canvas_h), CREAM)
+    canvas = Image.new("RGB", (canvas_w, canvas_h), CREAM_RGB)
     draw = ImageDraw.Draw(canvas)
-    title_font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSerif.ttf", 26)
+    title_font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSerif.ttf", 28)
     label_font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 13)
     scale = panel_w / crop_w
 
-    draw.text((margin, 16), "Hub-centric ego networks (outbound only)", fill=INK, font=title_font)
+    title_w = draw.textlength(HUB_INFOGRAPHIC_TITLE, font=title_font)
+    draw.text(((canvas_w - title_w) / 2, 12), HUB_INFOGRAPHIC_TITLE, fill=INK, font=title_font)
 
+    legend_x = (canvas_w - legend_w) // 2
+    draw_legend_compact(draw, legend_x, title_h + 4, legend_w)
+
+    panels_y = header_h
     for i, hub in enumerate(HUBS):
         col, row = i % 3, i // 3
         subset = [e for e in edges if e["src"] == hub]
@@ -570,7 +584,7 @@ def render_hub_panels(edges: list[dict]) -> Path:
             positions=logo_centers,
         )
         x0 = margin + col * (panel_w + gap)
-        y0 = header_h + row * (panel_h + gap)
+        y0 = panels_y + row * (panel_h + gap)
         draw.rounded_rectangle(
             (x0 - 2, y0 - 2, x0 + panel_w + 2, y0 + panel_h + 2),
             radius=4,
@@ -582,9 +596,6 @@ def render_hub_panels(edges: list[dict]) -> Path:
         tag_w = int(draw.textlength(tag, font=label_font)) + 16
         draw.rectangle((x0 + 8, y0 + 8, x0 + 8 + tag_w, y0 + 28), fill=(255, 255, 255))
         draw.text((x0 + 16, y0 + 10), tag, fill=INK, font=label_font)
-
-    legend_y = header_h + 2 * (panel_h + gap) + 12
-    draw_legend_box(draw, margin, legend_y, canvas_w - margin * 2)
 
     out = OUT_DIR / "signatories-hub-networks.png"
     canvas.save(out, format="PNG", optimize=True)
