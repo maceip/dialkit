@@ -42,6 +42,7 @@ GRID_TOP = 398
 GRID_BOTTOM = 1458
 GRID_LEFT = 52
 GRID_RIGHT = 1040
+GRID_CROP = (38, 365, 1054, 1475)  # logo grid only — excludes title + signatory text
 
 CREAM = "#FFF9F2"
 INK = "#1a1a1a"
@@ -460,37 +461,103 @@ def render_grid_multiples(edges: list[dict]) -> Path:
     return out
 
 
+@lru_cache(maxsize=1)
+def logo_grid_base() -> Image.Image:
+    x0, y0, x1, y1 = GRID_CROP
+    return Image.open(BASE_IMAGE).convert("RGB").crop((x0, y0, x1, y1))
+
+
+def logo_centers_cropped() -> dict[str, tuple[float, float]]:
+    x0, y0, _, _ = GRID_CROP
+    return {name: (x - x0, y - y0) for name, (x, y) in build_logo_centers().items()}
+
+
+def draw_line_legend(
+    draw: ImageDraw.ImageDraw,
+    x: int,
+    y: int,
+    width: int,
+    font: ImageFont.FreeTypeFont,
+    small_font: ImageFont.FreeTypeFont,
+):
+    mid = x + width // 2
+    row_h = 22
+
+    def sample_solid(sx: int, sy: int, color: str):
+        draw.line([(sx, sy), (sx + 44, sy)], fill=color, width=4)
+
+    def sample_dashed(sx: int, sy: int, color: str):
+        for i in range(0, 44, 6):
+            draw.line([(sx + i, sy), (sx + i + 3, sy)], fill=color, width=4)
+
+    sample_solid(x, y + 10, FAMILY_COLORS["corp"])
+    draw.text((x + 52, y + 2), "Solid", fill=INK, font=font)
+    draw.text((x + 52, y + 14), "Corporate / CVC equity", fill=MUTED, font=small_font)
+
+    sample_solid(x + 200, y + 10, FAMILY_COLORS["ceo_1hop"])
+    draw.text((x + 252, y + 2), "Solid", fill=INK, font=font)
+    draw.text((x + 252, y + 14), "CEO 1-hop direct", fill=MUTED, font=small_font)
+
+    y2 = y + row_h + 8
+    sample_dashed(mid, y2 + 10, FAMILY_COLORS["ceo_2hop"])
+    draw.text((mid + 52, y2 + 2), "Dashed", fill=INK, font=font)
+    draw.text((mid + 52, y2 + 14), "CEO 2-hop via fund / GP", fill=MUTED, font=small_font)
+
+    sample_dashed(mid + 200, y2 + 10, FAMILY_COLORS["gov"])
+    draw.text((mid + 252, y2 + 2), "Dashed", fill=INK, font=font)
+    draw.text((mid + 252, y2 + 14), "Governance board interlock", fill=MUTED, font=small_font)
+
+    y3 = y2 + row_h + 10
+    draw.ellipse((x, y3, x + 18, y3 + 18), outline=(220, 38, 38), width=3)
+    draw.text((x + 26, y3 + 1), "Red ring = outbound hub origin", fill=INK, font=small_font)
+
+
 def render_hub_panels(edges: list[dict]) -> Path:
-    base_full = Image.open(BASE_IMAGE).convert("RGB")
-    logo_centers = build_logo_centers()
-    panel_w, panel_h = base_full.size[0] // 2, base_full.size[1] // 2
-    canvas = Image.new("RGB", (panel_w * 3, panel_h * 2 + 80), CREAM)
+    grid_base = logo_grid_base()
+    logo_centers = logo_centers_cropped()
+    crop_w, crop_h = grid_base.size
+
+    panel_w = 360
+    panel_h = int(panel_w * crop_h / crop_w)
+    gap = 14
+    header_h = 64
+    legend_h = 88
+    canvas_w = panel_w * 3 + gap * 2
+    canvas_h = header_h + panel_h * 2 + gap + legend_h
+
+    canvas = Image.new("RGB", (canvas_w, canvas_h), CREAM)
     draw = ImageDraw.Draw(canvas)
-    title_font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSerif.ttf", 28)
-    label_font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 15)
-    draw.text((36, 18), "Hub-centric ego networks (outbound only)", fill=INK, font=title_font)
+    title_font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSerif.ttf", 26)
+    label_font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 14)
+    legend_font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 11)
+    legend_small = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 9)
+    scale = panel_w / crop_w
+
+    draw.text((20, 18), "Hub-centric ego networks (outbound only)", fill=INK, font=title_font)
 
     for i, hub in enumerate(HUBS):
         col, row = i % 3, i // 3
         subset = [e for e in edges if e["src"] == hub]
-        panel_base = base_full.resize((panel_w, panel_h), Image.Resampling.LANCZOS)
+        panel_base = grid_base.resize((panel_w, panel_h), Image.Resampling.LANCZOS)
         panel = draw_edges_on_base(
             panel_base,
             subset,
-            scale=0.5,
-            width=4,
+            scale=scale,
+            width=3,
             highlight_src=hub,
             positions=logo_centers,
         )
-        x0 = col * panel_w
-        y0 = 80 + row * panel_h
+        x0 = col * (panel_w + gap)
+        y0 = header_h + row * (panel_h + gap)
         canvas.paste(panel, (x0, y0))
-        draw.text(
-            (x0 + 12, y0 + 8),
-            f"{short_name(hub)} → {len(subset)} ties",
-            fill=INK,
-            font=label_font,
-        )
+        tag = f"{short_name(hub)}  ·  {len(subset)} outbound ties"
+        tag_w = int(draw.textlength(tag, font=label_font)) + 14
+        draw.rectangle((x0 + 8, y0 + 8, x0 + 8 + tag_w, y0 + 30), fill=CREAM)
+        draw.text((x0 + 15, y0 + 11), tag, fill=INK, font=label_font)
+
+    legend_y = header_h + 2 * (panel_h + gap) + 6
+    draw.line([(20, legend_y - 4), (canvas_w - 20, legend_y - 4)], fill="#dddddd", width=1)
+    draw_line_legend(draw, 20, legend_y + 4, canvas_w - 40, legend_font, legend_small)
 
     out = OUT_DIR / "signatories-hub-networks.png"
     canvas.save(out, format="PNG", optimize=True)
