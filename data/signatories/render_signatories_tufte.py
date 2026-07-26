@@ -43,7 +43,8 @@ GRID_BOTTOM = 1458
 GRID_LEFT = 52
 GRID_RIGHT = 1040
 GRID_CROP = (38, 428, 1054, 1475)  # logo grid only — excludes title + signatory text
-PANEL_PAD = (28, 58, 28, 24)  # left, top, right, bottom — top pad keeps hub markers visible
+PANEL_PAD = (28, 72, 28, 24)  # extra top pad for top-row hub labels
+HUB_EXPORT_SCALE = 2  # 2× export for crisp Twitter/social text
 HUB_INFOGRAPHIC_TITLE = "Signatory Cartel?"
 CREAM_RGB = (255, 249, 242)
 
@@ -362,23 +363,39 @@ def draw_hub_marker(
     scale: float = 1.0,
 ):
     x, y = point
+    w, h = overlay.size
     draw = ImageDraw.Draw(overlay, "RGBA")
     r = max(14, int(24 * scale))
-    draw.ellipse((x - r - 2, y - r - 2, x + r + 2, y + r + 2), fill=(255, 255, 255, 240))
-    draw.ellipse((x - r, y - r, x + r, y + r), outline=(220, 38, 38, 255), width=4)
+    ring_w = max(3, int(4 * scale))
     font = ImageFont.truetype(
-        "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", max(11, int(13 * scale))
+        "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", max(12, int(14 * scale))
     )
     tw = draw.textlength(label, font=font)
-    pad = 5
-    tag_w, tag_h = tw + pad * 2, 16
-    tag_x, tag_y = x - tag_w / 2, y - r - tag_h - 6
+    pad = max(5, int(6 * scale))
+    tag_h = max(16, int(18 * scale))
+    tag_w = tw + pad * 2
+    margin = max(3, int(4 * scale))
+
+    # Prefer label above the ring; flip below when it would clip off the panel top.
+    tag_y = y - r - tag_h - margin
+    if tag_y < margin:
+        tag_y = y + r + margin
+
+    draw.ellipse(
+        (x - r - 2, y - r - 2, x + r + 2, y + r + 2),
+        fill=(255, 255, 255, 240),
+    )
+    draw.ellipse(
+        (x - r, y - r, x + r, y + r),
+        outline=(220, 38, 38, 255),
+        width=ring_w,
+    )
     draw.rounded_rectangle(
-        (tag_x, tag_y, tag_x + tag_w, tag_y + tag_h),
-        radius=3,
+        (x - tag_w / 2, tag_y, x + tag_w / 2, tag_y + tag_h),
+        radius=max(3, int(4 * scale)),
         fill=(220, 38, 38, 240),
     )
-    draw.text((tag_x + pad, tag_y + 1), label, fill="white", font=font)
+    draw.text((x - tag_w / 2 + pad, tag_y + max(1, int(2 * scale))), label, fill="white", font=font)
 
 
 def draw_edges_on_base(
@@ -508,26 +525,32 @@ def _wrap_text(draw: ImageDraw.ImageDraw, text: str, font: ImageFont.FreeTypeFon
     return lines
 
 
-def draw_legend_floating(draw: ImageDraw.ImageDraw, canvas_w: int, y: int) -> tuple[int, int, int, int]:
+def draw_legend_floating(
+    draw: ImageDraw.ImageDraw, canvas_w: int, y: int, *, export_scale: float = 1.0
+) -> tuple[int, int, int, int]:
     """Centered floating legend card — compact infographic style."""
-    card_w = 500
-    pad_x, pad_y = 18, 14
-    sample_w = 30
-    text_gap = 10
-    row_gap = 6
-    line_h = 11
-    radius = 12
-    font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 8)
-    bold = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 8)
+    s = export_scale
+    card_w = int(520 * s)
+    pad_x, pad_y = int(18 * s), int(14 * s)
+    sample_w = int(30 * s)
+    text_gap = int(10 * s)
+    row_gap = int(6 * s)
+    line_h = int(13 * s)
+    radius = int(12 * s)
+    stroke = max(2, int(3 * s))
+    font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", max(11, int(12 * s)))
     text_x_offset = pad_x + sample_w + text_gap
     max_text_w = card_w - text_x_offset - pad_x
+    sw = int(24 * s)
 
     def solid(sx, sy, color):
-        draw.line([(sx, sy), (sx + 24, sy)], fill=color, width=3)
+        draw.line([(sx, sy), (sx + sw, sy)], fill=color, width=stroke)
 
     def dashed(sx, sy, color):
-        for i in range(0, 24, 5):
-            draw.line([(sx + i, sy), (sx + i + 3, sy)], fill=color, width=3)
+        step = max(4, int(5 * s))
+        dash = max(2, int(3 * s))
+        for i in range(0, sw, step):
+            draw.line([(sx + i, sy), (sx + i + dash, sy)], fill=color, width=stroke)
 
     rows: list[tuple] = [
         (
@@ -549,7 +572,7 @@ def draw_legend_floating(draw: ImageDraw.ImageDraw, canvas_w: int, y: int) -> tu
     for draw_sample, text in rows:
         lines = _wrap_text(draw, text, font, max_text_w)
         wrapped_rows.append((draw_sample, lines))
-        content_h += max(14, len(lines) * line_h) + row_gap
+        content_h += max(int(14 * s), len(lines) * line_h) + row_gap
 
     color_items = [
         (FAMILY_COLORS["corp"], "Corporate"),
@@ -557,13 +580,13 @@ def draw_legend_floating(draw: ImageDraw.ImageDraw, canvas_w: int, y: int) -> tu
         (FAMILY_COLORS["ceo_2hop"], "Via fund"),
         (FAMILY_COLORS["gov"], "Governance"),
     ]
-    content_h += 16 + pad_y
+    content_h += int(18 * s) + pad_y
     card_h = content_h
     card_x = (canvas_w - card_w) // 2
+    shadow = int(2 * s)
 
-    # Soft drop shadow
     draw.rounded_rectangle(
-        (card_x + 2, y + 3, card_x + card_w + 2, y + card_h + 3),
+        (card_x + shadow, y + shadow + 1, card_x + card_w + shadow, y + card_h + shadow + 1),
         radius=radius,
         fill="#e6e2dc",
     )
@@ -572,19 +595,20 @@ def draw_legend_floating(draw: ImageDraw.ImageDraw, canvas_w: int, y: int) -> tu
         radius=radius,
         fill="#ffffff",
         outline="#d8d4ce",
-        width=1,
+        width=max(1, int(1 * s)),
     )
 
     row_y = y + pad_y
+    ring_r = int(6 * s)
     for draw_sample, lines in wrapped_rows:
-        mid_y = row_y + max(7, (len(lines) * line_h) // 2)
+        mid_y = row_y + max(int(7 * s), (len(lines) * line_h) // 2)
         if draw_sample is not None:
             draw_sample(card_x + pad_x, mid_y)
         else:
             draw.ellipse(
-                (card_x + pad_x, mid_y - 6, card_x + pad_x + 12, mid_y + 6),
+                (card_x + pad_x, mid_y - ring_r, card_x + pad_x + ring_r * 2, mid_y + ring_r),
                 outline=(220, 38, 38),
-                width=2,
+                width=max(2, int(2 * s)),
             )
         for i, line in enumerate(lines):
             draw.text(
@@ -593,17 +617,18 @@ def draw_legend_floating(draw: ImageDraw.ImageDraw, canvas_w: int, y: int) -> tu
                 fill=INK,
                 font=font,
             )
-        row_y += max(14, len(lines) * line_h) + row_gap
+        row_y += max(int(14 * s), len(lines) * line_h) + row_gap
 
     dot_x = card_x + pad_x
-    dot_y = row_y + 4
+    dot_y = row_y + int(4 * s)
+    dot_gap = int(14 * s)
     for color, label in color_items:
-        r = 4
+        r = max(4, int(5 * s))
         cx = dot_x + r
         cy = dot_y + r
         draw.ellipse((cx - r, cy - r, cx + r, cy + r), fill=color)
-        draw.text((dot_x + r * 2 + 4, dot_y - 1), label, fill=MUTED, font=font)
-        dot_x += r * 2 + 4 + int(draw.textlength(label, font=font)) + 14
+        draw.text((dot_x + r * 2 + int(4 * s), dot_y - int(1 * s)), label, fill=MUTED, font=font)
+        dot_x += r * 2 + int(4 * s) + int(draw.textlength(label, font=font)) + dot_gap
 
     return card_x, y, card_w, card_h
 
@@ -616,31 +641,40 @@ def render_hub_panels(edges: list[dict]) -> Path:
     logo_centers = logo_centers_padded()
     crop_w, crop_h = grid_base.size
 
-    panel_w = 360
+    s = HUB_EXPORT_SCALE
+    panel_w = int(360 * s)
     panel_h = int(panel_w * crop_h / crop_w)
-    gap = 14
-    margin = 20
+    gap = int(14 * s)
+    margin = int(20 * s)
     canvas_w = panel_w * 3 + gap * 2 + margin * 2
-    title_h = 44
-    legend_gap = 10
-    panels_gap = 18
+    title_h = int(44 * s)
+    legend_gap = int(10 * s)
+    panels_gap = int(18 * s)
 
-    # Size canvas from layout; legend drawn on a scratch layer first for height.
-    scratch = Image.new("RGB", (canvas_w, 400), CREAM_RGB)
+    scratch = Image.new("RGB", (canvas_w, int(400 * s)), CREAM_RGB)
     scratch_draw = ImageDraw.Draw(scratch)
-    title_font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSerif.ttf", 28)
-    _, legend_y, _, legend_h = draw_legend_floating(scratch_draw, canvas_w, title_h + legend_gap)
+    title_font = ImageFont.truetype(
+        "/usr/share/fonts/truetype/dejavu/DejaVuSerif.ttf", max(28, int(28 * s))
+    )
+    _, legend_y, _, legend_h = draw_legend_floating(
+        scratch_draw, canvas_w, title_h + legend_gap, export_scale=s
+    )
     panels_y = legend_y + legend_h + panels_gap
     canvas_h = panels_y + panel_h * 2 + gap + margin
 
     canvas = Image.new("RGB", (canvas_w, canvas_h), CREAM_RGB)
     draw = ImageDraw.Draw(canvas)
-    label_font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 13)
+    label_font = ImageFont.truetype(
+        "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", max(13, int(14 * s))
+    )
     scale = panel_w / crop_w
 
     title_w = draw.textlength(HUB_INFOGRAPHIC_TITLE, font=title_font)
-    draw.text(((canvas_w - title_w) / 2, 12), HUB_INFOGRAPHIC_TITLE, fill=INK, font=title_font)
-    draw_legend_floating(draw, canvas_w, title_h + legend_gap)
+    draw.text(((canvas_w - title_w) / 2, int(12 * s)), HUB_INFOGRAPHIC_TITLE, fill=INK, font=title_font)
+    draw_legend_floating(draw, canvas_w, title_h + legend_gap, export_scale=s)
+
+    tag_pad = int(8 * s)
+    tag_h = int(20 * s)
     for i, hub in enumerate(HUBS):
         col, row = i % 3, i // 3
         subset = [e for e in edges if e["src"] == hub]
@@ -649,26 +683,30 @@ def render_hub_panels(edges: list[dict]) -> Path:
             panel_base,
             subset,
             scale=scale,
-            width=3,
+            width=max(3, int(3 * s)),
             highlight_src=hub,
             positions=logo_centers,
         )
         x0 = margin + col * (panel_w + gap)
         y0 = panels_y + row * (panel_h + gap)
+        border = max(1, int(1 * s))
         draw.rounded_rectangle(
-            (x0 - 2, y0 - 2, x0 + panel_w + 2, y0 + panel_h + 2),
-            radius=4,
+            (x0 - border, y0 - border, x0 + panel_w + border, y0 + panel_h + border),
+            radius=max(4, int(4 * s)),
             outline="#dddddd",
-            width=1,
+            width=border,
         )
         canvas.paste(panel, (x0, y0))
         tag = f"{short_name(hub)}  ·  {len(subset)} outbound ties"
-        tag_w = int(draw.textlength(tag, font=label_font)) + 16
-        draw.rectangle((x0 + 8, y0 + 8, x0 + 8 + tag_w, y0 + 28), fill=(255, 255, 255))
-        draw.text((x0 + 16, y0 + 10), tag, fill=INK, font=label_font)
+        tag_w = int(draw.textlength(tag, font=label_font)) + tag_pad * 2
+        draw.rectangle(
+            (x0 + tag_pad, y0 + tag_pad, x0 + tag_pad + tag_w, y0 + tag_pad + tag_h),
+            fill=(255, 255, 255),
+        )
+        draw.text((x0 + tag_pad * 2, y0 + tag_pad + int(2 * s)), tag, fill=INK, font=label_font)
 
     out = OUT_DIR / "signatories-hub-networks.png"
-    canvas.save(out, format="PNG", optimize=True)
+    canvas.save(out, format="PNG", compress_level=3)
     return out
 
 
