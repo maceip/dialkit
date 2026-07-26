@@ -1,0 +1,89 @@
+Before-ish rows preserved; final total: 513
+Added: 82
+Skipped: 0
+
+=== ADDED ===
+  + PROFILE: AI21
+  + PROFILE: AMD
+  + PROFILE: American Innovators Network
+  + PROFILE: AMP
+  + PROFILE: Andreessen Horowitz
+  + PROFILE: Arcee AI
+  + PROFILE: Arena
+  + PROFILE: Baseten
+  + PROFILE: Black Forest Labs
+  + PROFILE: Block
+  + PROFILE: Box
+  + PROFILE: Cisco
+  + PROFILE: Cloudflare
+  + PROFILE: Cohere
+  + PROFILE: CrowdStrike
+  + PROFILE: Dell Technologies
+  + PROFILE: DoorDash
+  + PROFILE: Emergence Capital
+  + PROFILE: Fireworks AI
+  + PROFILE: Genspark
+  + PROFILE: GitHub
+  + PROFILE: Google
+  + PROFILE: Hugging Face
+  + PROFILE: IBM
+  + PROFILE: Inferact
+  + PROFILE: Interconnects AI
+  + PROFILE: Linux Foundation
+  + PROFILE: Mariana Minerals
+  + PROFILE: Meta
+  + PROFILE: Microsoft
+  + PROFILE: Mistral
+  + PROFILE: Morph
+  + PROFILE: Mozilla
+  + PROFILE: Nebius
+  + PROFILE: Nous Research
+  + PROFILE: NVIDIA
+  + PROFILE: Ollama
+  + PROFILE: OpenAI
+  + PROFILE: OpenClaw
+  + PROFILE: Palantir
+  + PROFILE: Palo Alto Networks
+  + PROFILE: Periodic Labs
+  + PROFILE: Perplexity
+  + PROFILE: Prime Intellect
+  + PROFILE: Reflection
+  + PROFILE: Replit
+  + PROFILE: ServiceNow
+  + PROFILE: Telnyx
+  + PROFILE: Trajectory
+  + PROFILE: Y Combinator
+  + EDGE: IBM -> Mistral (corporate_out) [CONFIRMED]
+  + EDGE: OpenAI -> AMD (corporate_out) [CONFIRMED]
+  + EDGE: Andreessen Horowitz -> Block (corporate_out) [CONFIRMED]
+  + EDGE: Andreessen Horowitz -> DoorDash (corporate_out) [CONFIRMED]
+  + EDGE: Y Combinator -> OpenAI (corporate_out) [INFERRED]
+  + EDGE: Y Combinator -> Morph (corporate_out) [CONFIRMED]
+  + EDGE: Google -> Cloudflare (corporate_out) [CONFIRMED]
+  + EDGE: Microsoft -> Cloudflare (corporate_out) [CONFIRMED]
+  + EDGE: Hugging Face -> Arcee AI (leader_angel) [CONFIRMED]
+  + EDGE: Hugging Face -> Trajectory (leader_angel) [CONFIRMED]
+  + EDGE: Hugging Face -> Black Forest Labs (leader_angel) [CONFIRMED]
+  + EDGE: Mistral -> IBM (corporate_in) [CONFIRMED]
+  + EDGE: AMD -> OpenAI (corporate_in) [CONFIRMED]
+  + EDGE: Block -> Andreessen Horowitz (corporate_in) [CONFIRMED]
+  + EDGE: Cloudflare -> Google (corporate_in) [CONFIRMED]
+  + EDGE: Cloudflare -> Microsoft (corporate_in) [CONFIRMED]
+  + EDGE: Morph -> Y Combinator (corporate_in) [CONFIRMED]
+  + EDGE: OpenAI -> Y Combinator (corporate_in) [INFERRED]
+  + EDGE: Arcee AI -> Hugging Face (corporate_in) [CONFIRMED]
+  + EDGE: Trajectory -> Hugging Face (corporate_in) [CONFIRMED]
+  + EDGE: Black Forest Labs -> Hugging Face (corporate_in) [CONFIRMED]
+  + GOV: Marc Andreessen / Meta
+  + GOV: Tony Xu / Meta
+  + GOV: Tony Xu / DoorDash
+  + GOV: Marc Andreessen / Andreessen Horowitz
+  + CORRECTION: Periodic Labs
+  + CORRECTION: Morph
+  + CORRECTION: Genspark
+  + CORRECTION: Prime Intellect
+  + CORRECTION: GitHub
+  + CORRECTION: Mozilla
+  + CORRECTION: American Innovators Network
+
+=== SKIPPED ===

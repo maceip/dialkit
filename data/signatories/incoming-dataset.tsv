@@ -1,0 +1,121 @@
+leader_name	leader_org	degree	path	via_name	target_name	edge_type	confidence
+Anjney Midha	AMP	1	Anjney Midha -> Periodic Labs		Periodic Labs	equity_stake_via_amp_control	high
+Anjney Midha	AMP	2	Anjney Midha -> AMP -> Periodic Labs	AMP	Periodic Labs	gp_via_fund	high
+Marc Andreessen	Andreessen Horowitz	1	Marc Andreessen -> Meta		Meta	equity_stake	high
+Marc Andreessen	Andreessen Horowitz	2	Marc Andreessen -> a16z -> OpenAI	Andreessen Horowitz	OpenAI	gp_via_fund	high
+Marc Andreessen	Andreessen Horowitz	2	Marc Andreessen -> a16z -> Mistral	Andreessen Horowitz	Mistral	gp_via_fund	high
+Marc Andreessen	Andreessen Horowitz	2	Marc Andreessen -> a16z -> Replit	Andreessen Horowitz	Replit	gp_via_fund	high
+Marc Andreessen	Andreessen Horowitz	2	Marc Andreessen -> a16z -> Black Forest Labs	Andreessen Horowitz	Black Forest Labs	gp_via_fund	high
+Marc Andreessen	Andreessen Horowitz	2	Marc Andreessen -> a16z -> Periodic Labs	Andreessen Horowitz	Periodic Labs	gp_via_fund	high
+Marc Andreessen	Andreessen Horowitz	2	Marc Andreessen -> a16z -> Morph	Andreessen Horowitz	Morph	gp_via_fund	medium
+Marc Andreessen	Andreessen Horowitz	2	Marc Andreessen -> a16z -> AMP	Andreessen Horowitz	AMP	gp_via_fund	high
+Marc Andreessen	Andreessen Horowitz	2	Marc Andreessen -> a16z -> DoorDash	Andreessen Horowitz	DoorDash	gp_via_fund	medium
+Marc Andreessen	Andreessen Horowitz	2	Marc Andreessen -> a16z -> AMP -> Periodic Labs	AMP	Periodic Labs	fund_via_portfolio	medium
+Ben Horowitz	Andreessen Horowitz	2	Ben Horowitz -> a16z -> OpenAI	Andreessen Horowitz	OpenAI	gp_via_fund	high
+Ben Horowitz	Andreessen Horowitz	2	Ben Horowitz -> a16z -> Mistral	Andreessen Horowitz	Mistral	gp_via_fund	high
+Ben Horowitz	Andreessen Horowitz	2	Ben Horowitz -> a16z -> Replit	Andreessen Horowitz	Replit	gp_via_fund	high
+Ben Horowitz	Andreessen Horowitz	2	Ben Horowitz -> a16z -> Black Forest Labs	Andreessen Horowitz	Black Forest Labs	gp_via_fund	high
+Ben Horowitz	Andreessen Horowitz	2	Ben Horowitz -> a16z -> Periodic Labs	Andreessen Horowitz	Periodic Labs	gp_via_fund	high
+Ben Horowitz	Andreessen Horowitz	2	Ben Horowitz -> a16z -> Morph	Andreessen Horowitz	Morph	gp_via_fund	medium
+Ben Horowitz	Andreessen Horowitz	2	Ben Horowitz -> a16z -> AMP	Andreessen Horowitz	AMP	gp_via_fund	high
+Ben Horowitz	Andreessen Horowitz	2	Ben Horowitz -> a16z -> DoorDash	Andreessen Horowitz	DoorDash	gp_via_fund	medium
+Aaron Levie	Box	1	Aaron Levie -> Prime Intellect		Prime Intellect	angel_equity	medium
+Chuck Robbins	Cisco	1	Cisco -> Mistral		Mistral	equity_stake	high
+Chuck Robbins	Cisco	1	Cisco -> Cohere		Cohere	equity_stake	high
+Chuck Robbins	Cisco	2	Chuck Robbins -> Cisco AI Fund -> Mistral	Cisco AI Investment Fund	Mistral	corp_via_fund	high
+Chuck Robbins	Cisco	2	Chuck Robbins -> Cisco AI Fund -> Cohere	Cisco AI Investment Fund	Cohere	corp_via_fund	high
+Michael Dell	Dell Technologies	1	Dell -> Prime Intellect		Prime Intellect	equity_stake	medium
+Michael Dell	Dell Technologies	1	Dell -> CrowdStrike (historical)		CrowdStrike	equity_stake	low
+Michael Dell	Dell Technologies	2	Michael Dell -> Coatue Innovation Fund -> OpenAI	Coatue Innovation Fund	OpenAI	lp_via_fund	high
+Gordon Ritter	Emergence Capital	1	Emergence -> Box		Box	equity_stake	medium
+Gordon Ritter	Emergence Capital	2	Gordon Ritter -> Emergence -> Box	Emergence Capital	Box	gp_via_fund	medium
+Sundar Pichai	Google	1	Google -> Hugging Face		Hugging Face	equity_stake	high
+Sundar Pichai	Google	1	Google -> AI21		AI21	equity_stake	high
+Sundar Pichai	Google	1	Google -> Baseten		Baseten	equity_stake	high
+Sundar Pichai	Google	2	Sundar Pichai -> CapitalG -> Hugging Face	CapitalG	Hugging Face	corp_via_fund	medium
+Sundar Pichai	Google	2	Sundar Pichai -> CapitalG -> AI21	CapitalG	AI21	corp_via_fund	medium
+Sundar Pichai	Google	2	Sundar Pichai -> CapitalG -> Baseten	CapitalG	Baseten	corp_via_fund	medium
+Clément Delangue	Hugging Face	1	Clément Delangue -> Perplexity		Perplexity	angel_equity	high
+Clément Delangue	Hugging Face	1	Clément Delangue -> Mistral		Mistral	angel_equity	high
+Clément Delangue	Hugging Face	1	Clément Delangue -> Prime Intellect		Prime Intellect	angel_equity	high
+Arvind Krishna	IBM	1	IBM -> Hugging Face		Hugging Face	equity_stake	high
+Lisa Su	AMD	1	AMD -> Hugging Face		Hugging Face	equity_stake	medium
+Lisa Su	AMD	1	AMD -> Fireworks AI		Fireworks AI	equity_stake	low
+Satya Nadella	Microsoft	1	Microsoft -> OpenAI		OpenAI	equity_stake	high
+Satya Nadella	Microsoft	1	Microsoft -> GitHub		GitHub	equity_stake	high
+Satya Nadella	Microsoft	1	Microsoft -> Mistral		Mistral	equity_stake	medium
+Laura Chambers	Mozilla	1	Mozilla -> Nous Research		Nous Research	equity_stake	high
+Laura Chambers	Mozilla	2	Laura Chambers -> Mozilla Ventures -> Nous Research	Mozilla Ventures	Nous Research	corp_via_fund	high
+Arkady Volozh	Nebius	1	Nebius -> AI21		AI21	equity_stake	high
+Arkady Volozh	Nebius	2	Arkady Volozh -> Nebius -> AI21	Nebius	AI21	corp_via_company	high
+Jensen Huang	NVIDIA	1	NVIDIA -> OpenAI		OpenAI	equity_stake	high
+Jensen Huang	NVIDIA	1	NVIDIA -> Nebius		Nebius	equity_stake	high
+Jensen Huang	NVIDIA	1	NVIDIA -> Mistral		Mistral	equity_stake	high
+Jensen Huang	NVIDIA	1	NVIDIA -> Cohere		Cohere	equity_stake	high
+Jensen Huang	NVIDIA	1	NVIDIA -> Hugging Face		Hugging Face	equity_stake	high
+Jensen Huang	NVIDIA	1	NVIDIA -> Perplexity		Perplexity	equity_stake	high
+Jensen Huang	NVIDIA	1	NVIDIA -> Fireworks AI		Fireworks AI	equity_stake	high
+Jensen Huang	NVIDIA	1	NVIDIA -> Baseten		Baseten	equity_stake	high
+Jensen Huang	NVIDIA	1	NVIDIA -> AI21		AI21	equity_stake	high
+Jensen Huang	NVIDIA	1	NVIDIA -> Periodic Labs		Periodic Labs	equity_stake	medium
+Jensen Huang	NVIDIA	1	NVIDIA -> Reflection		Reflection	equity_stake	medium
+Jensen Huang	NVIDIA	1	NVIDIA -> Prime Intellect		Prime Intellect	equity_stake	medium
+Jensen Huang	NVIDIA	2	Jensen Huang -> NVentures -> OpenAI	NVentures	OpenAI	corp_via_fund	medium
+Jensen Huang	NVIDIA	2	Jensen Huang -> NVentures -> Nebius	NVentures	Nebius	corp_via_fund	medium
+Jensen Huang	NVIDIA	2	Jensen Huang -> NVentures -> Mistral	NVentures	Mistral	corp_via_fund	medium
+Jensen Huang	NVIDIA	2	Jensen Huang -> NVentures -> Cohere	NVentures	Cohere	corp_via_fund	medium
+Jensen Huang	NVIDIA	2	Jensen Huang -> NVentures -> Hugging Face	NVentures	Hugging Face	corp_via_fund	medium
+Jensen Huang	NVIDIA	2	Jensen Huang -> NVentures -> Perplexity	NVentures	Perplexity	corp_via_fund	medium
+Jensen Huang	NVIDIA	2	Jensen Huang -> NVentures -> Fireworks AI	NVentures	Fireworks AI	corp_via_fund	medium
+Jensen Huang	NVIDIA	2	Jensen Huang -> NVentures -> Baseten	NVentures	Baseten	corp_via_fund	medium
+Jensen Huang	NVIDIA	2	Jensen Huang -> NVentures -> AI21	NVentures	AI21	corp_via_fund	medium
+Jensen Huang	NVIDIA	2	Jensen Huang -> NVentures -> Periodic Labs	NVentures	Periodic Labs	corp_via_fund	medium
+Jensen Huang	NVIDIA	2	Jensen Huang -> NVentures -> Reflection	NVentures	Reflection	corp_via_fund	medium
+Jensen Huang	NVIDIA	2	Jensen Huang -> NVentures -> Prime Intellect	NVentures	Prime Intellect	corp_via_fund	medium
+Jensen Huang	NVIDIA	2	NVIDIA -> Nebius -> AI21	Nebius	AI21	fund_via_portfolio	high
+Aravind Srinivas	Perplexity	1	Aravind Srinivas -> Prime Intellect		Prime Intellect	angel_equity	medium
+Amjad Masad	Replit	1	Amjad Masad -> Perplexity		Perplexity	angel_equity	medium
+Garry Tan	Y Combinator	1	Garry Tan -> Perplexity		Perplexity	angel_equity	high
+Garry Tan	Y Combinator	1	Y Combinator -> DoorDash		DoorDash	equity_stake	high
+Garry Tan	Y Combinator	1	Y Combinator -> Replit		Replit	equity_stake	high
+Garry Tan	Y Combinator	1	Y Combinator -> Ollama		Ollama	equity_stake	high
+Garry Tan	Y Combinator	1	Y Combinator -> AMP		AMP	equity_stake	high
+Garry Tan	Y Combinator	2	Garry Tan -> YC -> DoorDash	Y Combinator	DoorDash	leadership_via_org	high
+Garry Tan	Y Combinator	2	Garry Tan -> YC -> Replit	Y Combinator	Replit	leadership_via_org	high
+Garry Tan	Y Combinator	2	Garry Tan -> YC -> Ollama	Y Combinator	Ollama	leadership_via_org	high
+Garry Tan	Y Combinator	2	Garry Tan -> YC -> AMP	Y Combinator	AMP	leadership_via_org	high
+Garry Tan	Y Combinator	2	Y Combinator -> AMP -> Periodic Labs	AMP	Periodic Labs	fund_via_portfolio	medium
+Jack Dorsey	Block	0	(none public into list)			no_public_equity_path	high
+Sam Altman	OpenAI	0	(personal funds mostly off-list)			personal_fund_off_list	medium
+Yoav Shoham	AI21	0	(none public outbound into list)			no_public_equity_path	medium
+Ori Goshen	AI21	0	(none public outbound into list)			no_public_equity_path	medium
+Vanessa Day	American Innovators Network	0	(none public outbound into list)			no_public_equity_path	medium
+Mark McQuade	Arcee AI	0	(none public outbound into list)			no_public_equity_path	medium
+Anastasios Angelopoulos	Arena	0	(none public outbound into list)			no_public_equity_path	medium
+Tuhin Srivastava	Baseten	0	(none public outbound into list)			no_public_equity_path	medium
+Robin Rombach	Black Forest Labs	0	(none public outbound into list)			no_public_equity_path	medium
+Matthew Prince	Cloudflare	0	(none public outbound into list)			no_public_equity_path	medium
+Aidan Gomez	Cohere	0	(none public outbound into list)			no_public_equity_path	medium
+George Kurtz	CrowdStrike	0	(none public outbound into list)			no_public_equity_path	medium
+Tony Xu	DoorDash	0	(none public outbound into list)			no_public_equity_path	medium
+Lin Qiao	Fireworks AI	0	(none public outbound into list)			no_public_equity_path	medium
+Stephen Guo	Genspark	0	(none public outbound into list)			no_public_equity_path	medium
+Thomas Dohmke	GitHub	0	(none public outbound into list)			no_public_equity_path	medium
+Simon Mo	Inferact	0	(none public outbound into list)			no_public_equity_path	medium
+Nathan Lambert	Interconnects AI	0	(none public outbound into list)			no_public_equity_path	medium
+Jim Zemlin	The Linux Foundation	0	(none public outbound into list)			no_public_equity_path	medium
+Turner Caldwell	Mariana Minerals	0	(none public outbound into list)			no_public_equity_path	medium
+Mark Zuckerberg	Meta	0	(none public outbound into list)			no_public_equity_path	medium
+Arthur Mensch	Mistral	0	(none public outbound into list)			no_public_equity_path	medium
+Gil Arditi	Morph	0	(none public outbound into list)			no_public_equity_path	medium
+Jeffrey Quesnelle	Nous Research	0	(none public outbound into list)			no_public_equity_path	medium
+Jeffrey Morgan	Ollama	0	(none public outbound into list)			no_public_equity_path	medium
+Peter Steinberger	OpenClaw	0	(none public outbound into list)			no_public_equity_path	medium
+Alex Karp	Palantir	0	(none public outbound into list)			no_public_equity_path	medium
+Nikesh Arora	Palo Alto Networks	0	(none public outbound into list)			no_public_equity_path	low
+William Fedus	Periodic Labs	0	(none public outbound into list)			no_public_equity_path	medium
+Johannes Hötter	Prime Intellect	0	(none public outbound into list)			no_public_equity_path	medium
+Misha Laskin	Reflection	0	(none public outbound into list)			no_public_equity_path	medium
+Bill McDermott	ServiceNow	0	(none public outbound into list)			no_public_equity_path	medium
+David Casem	Telnyx	0	(none public outbound into list)			no_public_equity_path	medium
+Ronak Malde	Trajectory	0	(none public outbound into list)			no_public_equity_path	medium
