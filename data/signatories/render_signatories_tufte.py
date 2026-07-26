@@ -319,6 +319,31 @@ def cubic_bezier(t, p0, p1, p2, p3):
     )
 
 
+def draw_hub_marker(
+    overlay: Image.Image,
+    point: tuple[float, float],
+    label: str,
+    *,
+    scale: float = 1.0,
+):
+    x, y = point
+    draw = ImageDraw.Draw(overlay, "RGBA")
+    r = int(18 * scale) if scale < 1 else 22
+    draw.ellipse((x - r, y - r, x + r, y + r), outline=(220, 38, 38, 255), width=4)
+    draw.ellipse((x - r + 5, y - r + 5, x + r - 5, y + r - 5), outline=(220, 38, 38, 120), width=2)
+    font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", max(10, int(12 * scale)))
+    tw = draw.textlength(label, font=font)
+    pad = 4
+    tag_w, tag_h = tw + pad * 2, 14
+    tag_x, tag_y = x - tag_w / 2, y - r - tag_h - 4
+    draw.rounded_rectangle(
+        (tag_x, tag_y, tag_x + tag_w, tag_y + tag_h),
+        radius=3,
+        fill=(220, 38, 38, 230),
+    )
+    draw.text((tag_x + pad, tag_y + 1), label, fill="white", font=font)
+
+
 def draw_edges_on_base(
     base: Image.Image,
     edges: list[dict],
@@ -364,6 +389,9 @@ def draw_edges_on_base(
         left = (tx - size * math.cos(ang - 0.45), ty - size * math.sin(ang - 0.45))
         right = (tx - size * math.cos(ang + 0.45), ty - size * math.sin(ang + 0.45))
         draw.polygon([points[-1], left, right], fill=color[:3])
+
+    if highlight_src and highlight_src in positions:
+        draw_hub_marker(overlay, positions[highlight_src], short_name(highlight_src), scale=scale)
 
     return Image.alpha_composite(base.convert("RGBA"), overlay).convert("RGB")
 
