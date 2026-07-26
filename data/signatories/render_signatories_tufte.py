@@ -8,11 +8,13 @@ import hashlib
 import math
 import shutil
 from collections import Counter, defaultdict
+from functools import lru_cache
 from pathlib import Path
 
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 from matplotlib import colors as mcolors
+import numpy as np
 from PIL import Image, ImageDraw, ImageFont
 
 BASE_IMAGE = Path("/opt/cursor/artifacts/nvidia-signatories-base.png")
@@ -183,6 +185,35 @@ def build_positions() -> dict[str, tuple[float, float]]:
     return pos
 
 
+@lru_cache(maxsize=1)
+def build_logo_centers() -> dict[str, tuple[float, float]]:
+    """Optical logo centers detected from the NVIDIA artwork."""
+    image = Image.open(BASE_IMAGE).convert("RGB")
+    arr = np.array(image)
+    cream = np.median(arr[400:470, 80:200], axis=(0, 1))
+    diff = np.abs(arr.astype(int) - cream).sum(axis=2)
+
+    rows, cols = len(GRID), len(GRID[0])
+    cell_w = (GRID_RIGHT - GRID_LEFT) / cols
+    cell_h = (GRID_BOTTOM - GRID_TOP) / rows
+    centers: dict[str, tuple[float, float]] = {}
+
+    for r, row in enumerate(GRID):
+        for c, name in enumerate(row):
+            cx = GRID_LEFT + (c + 0.5) * cell_w
+            cy = GRID_TOP + (r + 0.5) * cell_h
+            x0, y0 = int(cx - cell_w * 0.42), int(cy - cell_h * 0.42)
+            x1, y1 = int(cx + cell_w * 0.42), int(cy + cell_h * 0.42)
+            patch = diff[y0:y1, x0:x1]
+            if patch.size == 0:
+                centers[name] = (cx, cy)
+                continue
+            ly, lx = np.unravel_index(patch.argmax(), patch.shape)
+            centers[name] = (float(x0 + lx), float(y0 + ly))
+
+    return centers
+
+
 def write_hero() -> Path:
     out = OUT_DIR / "signatories-hero.png"
     shutil.copy2(BASE_IMAGE, out)
@@ -328,18 +359,20 @@ def draw_hub_marker(
 ):
     x, y = point
     draw = ImageDraw.Draw(overlay, "RGBA")
-    r = int(18 * scale) if scale < 1 else 22
+    r = max(14, int(24 * scale))
+    draw.ellipse((x - r - 2, y - r - 2, x + r + 2, y + r + 2), fill=(255, 255, 255, 240))
     draw.ellipse((x - r, y - r, x + r, y + r), outline=(220, 38, 38, 255), width=4)
-    draw.ellipse((x - r + 5, y - r + 5, x + r - 5, y + r - 5), outline=(220, 38, 38, 120), width=2)
-    font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", max(10, int(12 * scale)))
+    font = ImageFont.truetype(
+        "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", max(11, int(13 * scale))
+    )
     tw = draw.textlength(label, font=font)
-    pad = 4
-    tag_w, tag_h = tw + pad * 2, 14
-    tag_x, tag_y = x - tag_w / 2, y - r - tag_h - 4
+    pad = 5
+    tag_w, tag_h = tw + pad * 2, 16
+    tag_x, tag_y = x - tag_w / 2, y - r - tag_h - 6
     draw.rounded_rectangle(
         (tag_x, tag_y, tag_x + tag_w, tag_y + tag_h),
         radius=3,
-        fill=(220, 38, 38, 230),
+        fill=(220, 38, 38, 240),
     )
     draw.text((tag_x + pad, tag_y + 1), label, fill="white", font=font)
 
@@ -352,29 +385,36 @@ def draw_edges_on_base(
     width: int = 4,
     dashed_families: set[str] | None = None,
     highlight_src: str | None = None,
+    positions: dict[str, tuple[float, float]] | None = None,
 ) -> Image.Image:
     dashed_families = dashed_families or {"ceo_2hop", "gov"}
-    positions = build_positions()
-    w, h = base.size
-    overlay = Image.new("RGBA", (w, h), (0, 0, 0, 0))
+    positions = dict(positions or build_positions())
+    overlay = Image.new("RGBA", base.size, (0, 0, 0, 0))
     draw = ImageDraw.Draw(overlay, "RGBA")
 
     if scale != 1.0:
         positions = {k: (v[0] * scale, v[1] * scale) for k, v in positions.items()}
 
+    hub_point = positions.get(highlight_src) if highlight_src else None
+
     for edge in edges:
-        if edge["src"] not in positions or edge["tgt"] not in positions:
+        if edge["tgt"] not in positions:
             continue
-        start = positions[edge["src"]]
+        if hub_point is not None:
+            start = hub_point
+        elif edge["src"] not in positions:
+            continue
+        else:
+            start = positions[edge["src"]]
         end = positions[edge["tgt"]]
         color_hex = FAMILY_COLORS[edge["family"]]
         rgb = tuple(int(color_hex[i:i + 2], 16) for i in (1, 3, 5))
-        alpha = 235 if edge["src"] == highlight_src else 190
+        alpha = 235 if hub_point is not None else 190
         color = (*rgb, alpha)
         edge_id = f"{edge['src']}|{edge['tgt']}|{edge['family']}"
         c1, c2 = control_points(start, end, edge_id)
         points = [cubic_bezier(t / 40, start, c1, c2, end) for t in range(41)]
-        stroke = width + (1 if edge["src"] == highlight_src else 0)
+        stroke = width + (1 if hub_point is not None else 0)
 
         if edge["family"] in dashed_families:
             for i in range(0, len(points) - 1, 2):
@@ -390,8 +430,8 @@ def draw_edges_on_base(
         right = (tx - size * math.cos(ang + 0.45), ty - size * math.sin(ang + 0.45))
         draw.polygon([points[-1], left, right], fill=color[:3])
 
-    if highlight_src and highlight_src in positions:
-        draw_hub_marker(overlay, positions[highlight_src], short_name(highlight_src), scale=scale)
+    if hub_point is not None and highlight_src is not None:
+        draw_hub_marker(overlay, hub_point, short_name(highlight_src), scale=scale)
 
     return Image.alpha_composite(base.convert("RGBA"), overlay).convert("RGB")
 
@@ -422,6 +462,7 @@ def render_grid_multiples(edges: list[dict]) -> Path:
 
 def render_hub_panels(edges: list[dict]) -> Path:
     base_full = Image.open(BASE_IMAGE).convert("RGB")
+    logo_centers = build_logo_centers()
     panel_w, panel_h = base_full.size[0] // 2, base_full.size[1] // 2
     canvas = Image.new("RGB", (panel_w * 3, panel_h * 2 + 80), CREAM)
     draw = ImageDraw.Draw(canvas)
@@ -433,7 +474,14 @@ def render_hub_panels(edges: list[dict]) -> Path:
         col, row = i % 3, i // 3
         subset = [e for e in edges if e["src"] == hub]
         panel_base = base_full.resize((panel_w, panel_h), Image.Resampling.LANCZOS)
-        panel = draw_edges_on_base(panel_base, subset, scale=0.5, width=4, highlight_src=hub)
+        panel = draw_edges_on_base(
+            panel_base,
+            subset,
+            scale=0.5,
+            width=4,
+            highlight_src=hub,
+            positions=logo_centers,
+        )
         x0 = col * panel_w
         y0 = 80 + row * panel_h
         canvas.paste(panel, (x0, y0))
