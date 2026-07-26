@@ -36,11 +36,15 @@ GRID_BOTTOM = 1458
 GRID_LEFT = 52
 GRID_RIGHT = 1040
 
-EDGE_COLOR = (30, 86, 200, 130)
-EDGE_COLOR_2HOP = (30, 86, 200, 95)
-AVATAR_BG = (255, 255, 255, 230)
+EDGE_COLOR = (20, 70, 190, 220)
+EDGE_COLOR_2HOP = (20, 70, 190, 190)
+AVATAR_BG = (255, 255, 255, 245)
 LEADER_RING = (37, 99, 235, 255)
 ORG_RING = (180, 83, 9, 255)
+AVATAR_RADIUS = 12
+AVATAR_GAP = 14
+EDGE_WIDTH_SOLID = 5.0
+EDGE_WIDTH_DASHED = 4.0
 
 
 def build_positions(width: int, height: int) -> dict[str, tuple[float, float]]:
@@ -58,8 +62,8 @@ def build_positions(width: int, height: int) -> dict[str, tuple[float, float]]:
 
 def avatar_points(center: tuple[float, float]) -> tuple[tuple[float, float], tuple[float, float]]:
   cx, cy = center
-  leader = (cx - 38, cy - 30)
-  org = (cx + 38, cy + 30)
+  leader = (cx - AVATAR_GAP, cy)
+  org = (cx + AVATAR_GAP, cy)
   return leader, org
 
 
@@ -128,8 +132,8 @@ def load_edges() -> list[dict]:
 
 def edge_style(edge: dict) -> tuple[tuple[int, int, int, int], bool, float]:
   if edge["degree"] in {"2", "gov"}:
-    return EDGE_COLOR_2HOP, True, 1.6
-  return EDGE_COLOR, False, 2.0
+    return EDGE_COLOR_2HOP, True, EDGE_WIDTH_DASHED
+  return EDGE_COLOR, False, EDGE_WIDTH_SOLID
 
 
 def control_points(
@@ -161,7 +165,7 @@ def draw_arrow(draw: ImageDraw.ImageDraw, tip, prev, color, width: float):
   tx, ty = tip
   px, py = prev
   ang = math.atan2(ty - py, tx - px)
-  size = 7 + width
+  size = 10 + width * 1.5
   left = (tx - size * math.cos(ang - 0.45), ty - size * math.sin(ang - 0.45))
   right = (tx - size * math.cos(ang + 0.45), ty - size * math.sin(ang + 0.45))
   draw.polygon([tip, left, right], fill=color[:3])
@@ -172,12 +176,13 @@ def draw_edge(draw: ImageDraw.ImageDraw, start, end, edge: dict):
   color, dashed, width = edge_style(edge)
   c1, c2 = control_points(start, end, edge_id)
   points = [cubic_bezier(t / 48, start, c1, c2, end) for t in range(49)]
+  stroke = max(3, int(round(width)))
 
   if dashed:
     for i in range(0, len(points) - 1, 2):
-      draw.line([points[i], points[i + 1]], fill=color, width=int(width), joint="curve")
+      draw.line([points[i], points[i + 1]], fill=color, width=stroke, joint="curve")
   else:
-    draw.line(points, fill=color, width=int(width), joint="curve")
+    draw.line(points, fill=color, width=stroke, joint="curve")
 
   draw_arrow(draw, points[-1], points[-4], color, width)
 
@@ -207,12 +212,18 @@ def draw_avatar(
   ring_color: tuple[int, int, int, int],
 ):
   x, y = point
-  r = 13
+  r = AVATAR_RADIUS
   draw = ImageDraw.Draw(overlay, "RGBA")
   bbox = (x - r, y - r, x + r, y + r)
   draw.ellipse(bbox, fill=AVATAR_BG, outline=ring_color, width=2)
-  icon = emoji_image(symbol, size=16)
-  overlay.paste(icon, (int(x - 8), int(y - 8)), icon)
+  icon = emoji_image(symbol, size=15)
+  overlay.paste(icon, (int(x - 7), int(y - 7)), icon)
+
+
+def draw_avatar_pair(overlay: Image.Image, center: tuple[float, float]):
+  leader_pt, org_pt = avatar_points(center)
+  draw_avatar(overlay, leader_pt, "👤", LEADER_RING)
+  draw_avatar(overlay, org_pt, "🏢", ORG_RING)
 
 
 def main():
@@ -232,9 +243,7 @@ def main():
     draw_edge(draw, start, target_org, edge)
 
   for center in positions.values():
-    leader_pt, org_pt = avatar_points(center)
-    draw_avatar(overlay, leader_pt, "👤", LEADER_RING)
-    draw_avatar(overlay, org_pt, "🏢", ORG_RING)
+    draw_avatar_pair(overlay, center)
 
   out = Image.alpha_composite(base, overlay).convert("RGB")
   out.save(OUTPUT, format="PNG", optimize=True)
